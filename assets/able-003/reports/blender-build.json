@@ -1,0 +1,53 @@
+{
+  "blender": "4.5.15 LTS",
+  "bones": [
+    "root",
+    "body_base",
+    "body_upper",
+    "face_anchor",
+    "arm_base.R",
+    "arm_mid.R",
+    "hand.R",
+    "arm_base.L",
+    "arm_mid.L",
+    "hand.L",
+    "foot_mount.R",
+    "foot.R",
+    "foot_mount.L",
+    "foot.L"
+  ],
+  "meshes": 21,
+  "source_meshes": 24,
+  "actions": [
+    {
+      "name": "jump",
+      "range": [
+        0.0,
+        90.0
+      ]
+    },
+    {
+      "name": "wave",
+      "range": [
+        0.0,
+        108.0
+      ]
+    }
+  ],
+  "fps": 30,
+  "face_socket": [
+    0.0,
+    -0.5099999904632568,
+    1.2200000286102295
+  ],
+  "cascadeur": {
+    "status": "NOT_RUN",
+    "reason": "No installation found in PATH, standard install directories or Windows uninstall registry. No subscription activated."
+  },
+  "notes": [
+    "Neutral mesh topology preserved; weights added to copies. No retopology or fur refinement.",
+    "Body and arms have custom skin weights; feet are rooted independently for floor support.",
+    "No face morph animation exported: R3F face mounts to face_socket.",
+    "FBX includes both actions for manual Cascadeur rig/import evaluation."
+  ]
+}

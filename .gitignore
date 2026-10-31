@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+*.log
+__pycache__/
+.venv/
+assets/exports/*
+!assets/exports/.gitkeep
+node_modules/
+dist/
+*.tsbuildinfo
+*.blend1
+.tools/

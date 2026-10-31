@@ -1,0 +1,23 @@
+{
+  "test": "Blender FBX export -> fresh Blender FBX import ONLY",
+  "status": "PASS",
+  "bones": 14,
+  "meshes": 21,
+  "actions": [
+    "AbleRig|AbleRig|jump",
+    "AbleRig|AbleRig|wave"
+  ],
+  "bounds_blender_z_up": {
+    "min": [
+      -1.1342617273330688,
+      -0.8099998831748962,
+      0.1900000125169754
+    ],
+    "max": [
+      1.1342617273330688,
+      0.48000040650367737,
+      2.65509295463562
+    ]
+  },
+  "cascadeur_test": "NOT_RUN: no installed application detected"
+}

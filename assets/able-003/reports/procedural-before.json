@@ -1,0 +1,30 @@
+[
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\animationController.ts",
+    "Hash": "60459F7DA8DE03DC1D4D255BF8EEA30210328EA3FF2487DC01737D83972D215B"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\AvatarScene.tsx",
+    "Hash": "F98BA3FE383CD517F60791D202AE592C3DDB2F1A53A46D52E7248ADA1C6AD99F"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\characterGeometry.ts",
+    "Hash": "A5750EF449DF612710E3868D88D1D277A140069AAC8EF8E981800527240CC683"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\DigitalFace.tsx",
+    "Hash": "56FAA9410F0F633A5ADF7379CD9432291D728AB1408AA604DD4D9520AEF6ACAD"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\ExpressionAccents.tsx",
+    "Hash": "C41F8DB70B395332479FA8220242B405EFAD5B7025E004D52C3E05C94A54B869"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\PerformanceProps.tsx",
+    "Hash": "C12B70D1316E96FA50C34650E40AAFD1A4FACB7FEFFD7E36108AB5E3DA3BD66C"
+  },
+  {
+    "Path": "F:\\Trabajo\\CWT2026\\able-avatar\\src\\avatar\\ProvisionalAvatar.tsx",
+    "Hash": "D8D784FDFA8EB368EF3C47AF11BEEF7333522B506FBAFAF5485BA2D3161EE04D"
+  }
+]

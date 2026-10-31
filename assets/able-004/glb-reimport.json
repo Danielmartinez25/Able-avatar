@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "character_meshes": 21,
+  "importer_bone_shapes": [
+    "Icosphere"
+  ],
+  "actions": [
+    "jump",
+    "wave",
+    "wave_v2"
+  ]
+}

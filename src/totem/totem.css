@@ -1,0 +1,29 @@
+:root{font-family:'Segoe UI',Arial,sans-serif;color:#253a3c;background:#eef4fb;font-synthesis:none;font-weight:400}
+*{box-sizing:border-box}body{margin:0}button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}button:focus-visible,input:focus-visible{outline:3px solid #008bc7;outline-offset:3px}
+.totem{height:100svh;min-height:520px;position:relative;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 50% 38%,#fff 12%,#f5f9fe 52%,#e3eefa 100%)}
+.avatar-view{position:absolute;inset:0;z-index:-1}.canvas-wrapper{position:absolute;inset:0}
+.scene-error{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px;color:#566d85}.scene-error button{padding:10px 14px;border:1px solid #c9d8e6;border-radius:8px;background:#fff}
+.sim-badge{position:absolute;top:16px;left:16px;padding:4px 10px;border-radius:6px;background:#f3d27a;color:#5b4210;font-size:12px;font-weight:600;letter-spacing:.08em}
+/* Hidden staff entry: an invisible corner target, still reachable by keyboard. */
+.staff-corner{position:absolute;top:0;right:0;width:72px;height:72px;border:0;background:transparent;opacity:0}.staff-corner:focus-visible{opacity:1;background:#ffffffaa;border-radius:0 0 0 16px}
+.talk{position:absolute;left:50%;bottom:clamp(16px,4vh,40px);transform:translateX(-50%);width:min(760px,calc(100% - 32px));padding:clamp(14px,2.4vh,22px) clamp(16px,3vw,26px);border:1px solid #ffffffcc;border-radius:22px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014;backdrop-filter:blur(14px)}
+.talk-status{display:flex;align-items:center;gap:10px;margin:0;font-size:clamp(16px,2.2vw,22px);font-weight:600;color:#197fa5}.talk-status[data-state=thinking]{color:#6b5fa8}.talk-status[data-state=error]{color:#a4432a}
+.talk-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e3f2f8;font-size:18px;flex-shrink:0}.talk-status[data-state=listening] .talk-icon{animation:talk-pulse 1.6s ease-in-out infinite}
+@keyframes talk-pulse{50%{box-shadow:0 0 0 8px #1885ab22}}@media(prefers-reduced-motion:reduce){.talk-status .talk-icon{animation:none}}
+.subtitles{margin:12px 0;max-height:7.5em;overflow:hidden;display:flex;flex-direction:column;gap:6px}.line{margin:0;font-size:clamp(15px,2vw,20px);line-height:1.4;color:#33474c}.line>span{display:inline-block;min-width:48px;margin-right:8px;font-size:.66em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a978b}.line.bot>span{color:#188db9}.line.hint{color:#7f8c80;font-style:italic}
+.talk-footer{display:flex;align-items:center;justify-content:space-between;gap:16px}.talk-footer .ai-note{margin:0}
+.end-button{flex-shrink:0;min-height:48px;padding:0 26px;border:1px solid #c98e7d;border-radius:12px;background:#fff7f3;color:#8d3d26;font-size:clamp(14px,1.8vw,17px);font-weight:600}.end-button:hover{background:#fbe9e1}
+.ai-note{font-size:clamp(11px,1.3vw,13px);color:#7f8c80;margin:10px 0 0}
+.farewell{position:absolute;left:50%;bottom:clamp(16px,6vh,60px);transform:translateX(-50%);width:min(620px,calc(100% - 32px));display:flex;flex-direction:column;gap:6px;text-align:center;padding:18px 24px;border-radius:20px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014}.farewell strong{font-size:clamp(20px,3vw,30px);font-weight:600;color:#188db9}.farewell span{font-size:clamp(13px,1.7vw,16px);color:#5f7270}
+.notices{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 32px));text-align:center;pointer-events:none}
+.kiosk-notice{margin:0;font-size:clamp(13px,1.6vw,16px);color:#8a5a1c}.kiosk-notice:not(:empty){margin-top:8px;padding:10px 16px;border-radius:12px;background:#fff8ecf0;box-shadow:0 6px 24px #4e4d3e14}.kiosk-notice.alert{color:#a4432a;font-weight:600}.kiosk-notice.alert:not(:empty){background:#fff1edf2}
+.staff-panel{position:absolute;top:16px;right:16px;width:min(380px,calc(100% - 32px));padding:20px;border:1px solid #dbe5ef;border-radius:18px;background:#fffffff7;box-shadow:0 20px 60px #1f3b5a26}
+.staff-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.staff-head h2{margin:0;font-size:16px;font-weight:600}.staff-close{width:36px;height:36px;border:1px solid #dbe5ef;border-radius:50%;background:#fff;font-size:20px;line-height:1;color:#566d85}
+.field-label{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#647468;margin-bottom:7px}
+.staff-panel input{width:100%;min-height:48px;border:1px solid #c9d3c6;border-radius:12px;background:#fff;padding:0 14px;font:inherit;font-size:17px;color:#253a3c}.staff-panel input:disabled{background:#f1f1ec;color:#8b978b}
+.start-button{width:100%;margin-top:10px;min-height:48px;border:1px solid #167fac;border-radius:12px;background:#197fa5;color:#fff;font-size:17px}.start-button:hover{background:#126e93}.start-button:disabled{background:#9db7c1;border-color:#9db7c1;cursor:default}
+.staff-tools{display:flex;gap:8px;margin-top:14px}.staff-tools button{flex:1;min-height:40px;border:1px solid #d1d8cc;border-radius:10px;background:#fff;color:#4f6470;font-size:13px}
+.staff-hint{margin:12px 0 0;font-size:11px;color:#8b978b}
+@media(max-width:480px){.talk-footer{flex-direction:column;align-items:stretch}.end-button{width:100%}}
+/* While talking, the scene shrinks above the subtitles so Able's face is never covered. */
+.totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{bottom:min(36vh,250px)}

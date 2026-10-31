@@ -1,0 +1,119 @@
+.comparison {
+  max-width: 1500px;
+}
+.comparison .topbar {
+  gap: 20px;
+  font-size: 12px;
+}
+.comparison .topbar a {
+  margin-left: auto;
+  color: #168bd3;
+  text-decoration: none;
+}
+.compare-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 24px;
+}
+.compare-controls button {
+  background: white;
+  border: 1px solid #c8ddee;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: #257caf;
+  font-size: 12px;
+}
+.compare-controls button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+.compare-controls .compare-primary {
+  background: #168bd3;
+  color: white;
+  border-color: #168bd3;
+}
+.compare-controls span {
+  margin-left: auto;
+  color: #7a8fa3;
+  font-size: 11px;
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.compare-grid h2 {
+  font-size: 20px;
+}
+.compare-grid p,
+.compare-grid small {
+  color: #72869b;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.compare-stage {
+  position: relative;
+  height: 470px;
+  border: 1px solid #e0eaf4;
+  border-radius: 20px;
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse at 48% 34%,
+    #fff 15%,
+    #f6f9fe 56%,
+    #e8f1fc 100%
+  );
+}
+.compare-stage > div {
+  width: 100%;
+  height: 100%;
+}
+.clip-inspector {
+  padding: 24px 0;
+}
+.clip-inspector label {
+  font-size: 12px;
+  color: #397fae;
+}
+.clip-inspector input {
+  width: 100%;
+  accent-color: #168eff;
+  margin: 14px 0 4px;
+}
+.clip-inspector p {
+  color: #8091a3;
+  font-size: 11px;
+}
+.compare-status {
+  border: 1px solid #e1d9c5;
+  padding: 16px 20px;
+  background: #fffcf4;
+  color: #857547;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.compare-error {
+  padding: 30px;
+  color: #a34c35;
+}
+@media (max-width: 760px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+  .compare-stage {
+    height: 440px;
+  }
+  .comparison .topbar span {
+    display: none;
+  }
+  .compare-controls span {
+    width: 100%;
+    margin: 0;
+  }
+  .comparison .intro h1 {
+    font-size: 30px;
+  }
+}

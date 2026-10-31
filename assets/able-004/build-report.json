@@ -1,0 +1,35 @@
+{
+  "blender": "4.5.15 LTS",
+  "source": "F:\\Trabajo\\CWT2026\\able-avatar\\assets\\able-003\\blender\\able-rigged.blend",
+  "output": "F:\\Trabajo\\CWT2026\\able-avatar\\public\\models\\able-004\\able-wave-v2.glb",
+  "bones": 14,
+  "actions": [
+    {
+      "name": "jump",
+      "frames": [
+        0.0,
+        90.0
+      ]
+    },
+    {
+      "name": "wave",
+      "frames": [
+        0.0,
+        108.0
+      ]
+    },
+    {
+      "name": "wave_v2",
+      "frames": [
+        0.0,
+        150.0
+      ]
+    }
+  ],
+  "source_sha256": {
+    "able-rigged.blend": "607a3eff28210e2432ff99076d41d297a3056b9c8b7586a223dbe12243525781",
+    "able-rigged.glb": "5ad75420ecf385f85083642951780def1d69e925a71d7c0ecc02505b8645f124"
+  },
+  "sampling": "Authored at 60Hz, exported at 30fps",
+  "cascadeur": "Not used; Blender explicitly authorized for ABLE-004"
+}

@@ -1,0 +1,126 @@
+{
+  "source": "procedural copy; neutral bind pose; no active clips",
+  "coordinates": "Three.js Y-up, front +Z",
+  "bounds": {
+    "min": [
+      -1.1342617273330688,
+      0.19,
+      -0.47999998927116394
+    ],
+    "max": [
+      1.1342617273330688,
+      2.65509295463562,
+      0.8099999999999999
+    ]
+  },
+  "meshes": [
+    {
+      "name": "body_shell",
+      "vertices": 31812
+    },
+    {
+      "name": "screen_rim",
+      "vertices": 17268
+    },
+    {
+      "name": "screen_glass",
+      "vertices": 17268
+    },
+    {
+      "name": "eye_stroke_-1",
+      "vertices": 297
+    },
+    {
+      "name": "eye_stroke_1",
+      "vertices": 297
+    },
+    {
+      "name": "mouth_stroke",
+      "vertices": 297
+    },
+    {
+      "name": "brow_curve_R",
+      "vertices": 297
+    },
+    {
+      "name": "brow_cap_R_0",
+      "vertices": 221
+    },
+    {
+      "name": "brow_cap_R_1",
+      "vertices": 221
+    },
+    {
+      "name": "arm_R_upper",
+      "vertices": 1189
+    },
+    {
+      "name": "arm_R_hand",
+      "vertices": 1189
+    },
+    {
+      "name": "foot_R_shell",
+      "vertices": 1025
+    },
+    {
+      "name": "foot_R_LED",
+      "vertices": 441
+    },
+    {
+      "name": "lateral_LED_R",
+      "vertices": 297
+    },
+    {
+      "name": "brow_curve_L",
+      "vertices": 297
+    },
+    {
+      "name": "brow_cap_L_0",
+      "vertices": 221
+    },
+    {
+      "name": "brow_cap_L_1",
+      "vertices": 221
+    },
+    {
+      "name": "arm_L_upper",
+      "vertices": 1189
+    },
+    {
+      "name": "arm_L_hand",
+      "vertices": 1189
+    },
+    {
+      "name": "foot_L_shell",
+      "vertices": 1025
+    },
+    {
+      "name": "foot_L_LED",
+      "vertices": 441
+    },
+    {
+      "name": "lateral_LED_L",
+      "vertices": 297
+    },
+    {
+      "name": "brand_X_-1",
+      "vertices": 182
+    },
+    {
+      "name": "brand_X_1",
+      "vertices": 182
+    }
+  ],
+  "omitted": [
+    "runtime fur lines",
+    "canvas bump texture",
+    "custom face halo shader",
+    "scene lights/environment",
+    "decorative sprites",
+    "action props"
+  ],
+  "notes": [
+    "Digital face meshes included as static reference; hidden in animated GLB, procedural face attached at runtime.",
+    "Base materials approximate source parameters; no material refinement in this stage."
+  ]
+}
