@@ -1,13 +1,21 @@
-import type { KioskConfig } from './kioskSession';
-import type { KioskEvent, KioskWidget } from './kioskContract';
-import { parseKioskEvent } from './kioskContract';
+import type { KioskConfig } from './kioskSession.ts';
+import type { KioskEvent, KioskWidget } from './kioskContract.ts';
+import { parseKioskEvent } from './kioskContract.ts';
 
 export interface KioskInitConfig {
   chatId: string;
   mode: 'kiosk';
   baseUrl: string;
   idleSeconds: number;
+  pauseMs?: number;
   onEvent(event: unknown): void;
+}
+
+/** The init call, with `pauseMs` only when it was configured (the widget defaults to 2200). */
+export function buildKioskInit(config: KioskConfig, onEvent: (event: unknown) => void): KioskInitConfig {
+  const init: KioskInitConfig = { chatId: config.chatId, mode: 'kiosk', baseUrl: config.baseUrl, idleSeconds: config.idleSeconds, onEvent };
+  if (config.pauseMs !== undefined) init.pauseMs = config.pauseMs;
+  return init;
 }
 
 const listeners = new Set<(event: KioskEvent) => void>();
@@ -40,16 +48,10 @@ export function ensureKioskWidget(config: KioskConfig): Promise<KioskWidget> {
       if (!able?.init || !able.startSession || !able.endSession)
         return fail(Error('El widget de Able de este entorno no tiene modo kiosco.'));
       try {
-        able.init({
-          chatId: config.chatId,
-          mode: 'kiosk',
-          baseUrl: config.baseUrl,
-          idleSeconds: config.idleSeconds,
-          onEvent: raw => {
-            const event = parseKioskEvent(raw);
-            if (event) for (const listener of [...listeners]) listener(event);
-          },
-        });
+        able.init(buildKioskInit(config, raw => {
+          const event = parseKioskEvent(raw);
+          if (event) for (const listener of [...listeners]) listener(event);
+        }));
       } catch {
         return fail(Error('No se pudo iniciar el widget de Able en modo kiosco.'));
       }

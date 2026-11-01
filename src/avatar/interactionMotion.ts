@@ -21,6 +21,7 @@ export function getInteractionPose(state: VisualState, elapsed: number, reduced:
     if (state === "greeting" || state === "farewell") pose.rightArm = -2.1;
     if (state === "listening") { pose.tilt = .09; pose.pitch = .055; pose.rightArm = -.48; }
     if (state === "thinking") { pose.tilt = -.13; pose.leftArm = 1; pose.leftArmForward = -.95; pose.eyeOffset = .045; }
+    if (state === "working") { pose.pitch = .1; pose.rightArmForward = -1; pose.leftArmForward = -1; pose.eyeOffset = .04; }
     if (state === "speaking") { pose.rightArm = -.62; pose.leftArm = .48; }
     return pose;
   }
@@ -64,6 +65,19 @@ export function getInteractionPose(state: VisualState, elapsed: number, reduced:
     pose.rightArm -= .08 * enter;
     pose.eyeOffset = enter * (.045 + .018 * beat(2.2,4.4,phase));
     pose.leftArmForward += .045 * Math.sin(t * 1.7) * enter;
+  }
+  if (state === "working") {
+    // Busy hands on the laptop; every few seconds the gaze drifts aside, as if checking a second screen.
+    const phase = t % 9.4;
+    const aside = beat(2.2,4.6,phase) - .8 * beat(6.3,8.4,phase);
+    pose.pitch += enter * (.1 + .015 * Math.sin(t * 2.1));
+    pose.rightArmForward -= enter * (1.02 + .1 * Math.sin(t * 14));
+    pose.leftArmForward -= enter * (1.02 + .1 * Math.sin(t * 14 + Math.PI));
+    pose.rightArm += .16 * enter;
+    pose.leftArm -= .16 * enter;
+    pose.turn += .14 * aside * enter;
+    pose.tilt += .03 * Math.sin(t * 1.3) * enter;
+    pose.eyeOffset = enter * .05 * aside;
   }
   if (state === "speaking") {
     // Local silent demonstration: phrasing and pauses, never inferred from audio.

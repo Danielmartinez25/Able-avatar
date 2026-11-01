@@ -18,6 +18,12 @@ export interface KioskSnapshot {
   /** Highest session number already ended; its late events are discarded. */
   endedSession: number;
   conversation: Conversation | null;
+  /** Working mode: a long `thinking` is covered with local phrases and the `working` animation. */
+  working: boolean;
+  /** A `thinking` is waiting for the visitor's `transcript`; without one Able discarded the turn as noise. */
+  awaitingTranscript: boolean;
+  /** Noise turns in a row since the last visitor `transcript`; two of them show `micHint`. */
+  discards: number;
   visual: VisualState;
   visualRevision: number;
   expression: 'auto' | 'doubtful';
@@ -33,6 +39,8 @@ export type KioskInput =
   | { type: 'started' }
   | { type: 'unavailable'; text: string }
   | { type: 'one-shot-complete'; revision: number }
+  /** Fired by a timer `workingDelayMs` after the `thinking` shown at `revision` started. */
+  | { type: 'working-start'; revision: number }
   | { type: 'farewell-done' }
   | { type: 'reset'; notice?: Notice };
 
@@ -43,6 +51,9 @@ export const initialKioskSnapshot: KioskSnapshot = {
   awaitingSession: false,
   endedSession: 0,
   conversation: null,
+  working: false,
+  awaitingTranscript: false,
+  discards: 0,
   visual: 'idle',
   visualRevision: 0,
   expression: 'auto',
@@ -51,6 +62,8 @@ export const initialKioskSnapshot: KioskSnapshot = {
   endReason: null,
 };
 const emptyTranscript = { user: '', bot: '' };
+export const micHint: Notice = { tone: 'info', text: 'Acercate un poco al micrófono y hablá claro 🙂' };
+const discardsForHint = 2;
 const inSession = (s: KioskSnapshot) => s.phase === 'conversation' || s.phase === 'error';
 
 function show(s: KioskSnapshot, visual: VisualState, patch: Partial<KioskSnapshot> = {}): KioskSnapshot {
@@ -64,6 +77,9 @@ function backToOperator(s: KioskSnapshot, notice: Notice): KioskSnapshot {
     awaitingSession: false,
     endedSession: Math.max(s.endedSession, s.session ?? 0),
     conversation: null,
+    working: false,
+    awaitingTranscript: false,
+    discards: 0,
     expression: 'auto',
     notice,
     transcript: emptyTranscript,
@@ -105,7 +121,16 @@ function terminalText(code: string | undefined, error: string | undefined) {
   return error ? error + ' Llamá al staff.' : genericTerminalMessage;
 }
 
+/** Only another `thinking` of the current session keeps working mode; anything else cuts it. */
+export const keepsWorking = (s: KioskSnapshot, e: KioskEvent) =>
+  e.event === 'state' && e.state === 'thinking' && e.session !== undefined && e.session === s.session;
+
 function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
+  if (s.working) {
+    if (keepsWorking(s, e)) return s;
+    // Cut first, even for events that are discarded below (stale sessions, audio levels).
+    s = show(s, 'thinking', { working: false });
+  }
   if (e.event === 'ready') {
     // Session numbers restart at 1 whenever the iframe (re)loads.
     if (inSession(s))
@@ -118,8 +143,10 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
   if (e.event === 'state' && e.session === undefined && e.state !== 'error') return s;
   if (!acceptsSession(s, e.session)) return s;
   const current = adopt(s, e.session);
-  if (e.event === 'transcript')
-    return { ...current, transcript: { ...current.transcript, [e.role]: e.text } };
+  if (e.event === 'transcript') {
+    const heard = e.role === 'user' ? { awaitingTranscript: false, discards: 0 } : {};
+    return { ...current, ...heard, transcript: { ...current.transcript, [e.role]: e.text } };
+  }
   if (e.event === 'session_ended') {
     const ended = Math.max(current.endedSession, e.session ?? current.session ?? 0);
     if (e.reason === 'replaced')
@@ -141,8 +168,14 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
     return show(current, current.visual === 'greeting' ? 'greeting' : 'listening', { conversation: 'preparing' });
   // Unknown codes still carry a display-safe Spanish `error` text.
   const recoverable = (e.code && recoverableCodes[e.code]) || (e.state === 'listening' ? e.error : undefined);
-  const notice: Notice = recoverable ? { tone: 'warning', text: recoverable } : e.state === 'listening' ? current.notice : null;
-  return show(current, e.state, { conversation: e.state, notice });
+  // thinking -> listening without code nor visitor transcript: Able dropped the turn as noise.
+  // Not an error; after a couple in a row, a gentle hint about the microphone.
+  const discarded = e.state === 'listening' && !e.code && !e.error && current.awaitingTranscript;
+  const discards = discarded ? current.discards + 1 : current.discards;
+  const notice: Notice = recoverable ? { tone: 'warning', text: recoverable }
+    : discarded && discards >= discardsForHint ? micHint
+    : e.state === 'listening' ? current.notice : null;
+  return show(current, e.state, { conversation: e.state, notice, discards, awaitingTranscript: e.state === 'thinking' });
 }
 
 export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot {
@@ -155,11 +188,14 @@ export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot
       return s.phase === 'creating' ? { ...s, phase: 'operator', notice: input.notice } : s;
     case 'started':
       return show({ ...s, visual: 'idle' }, 'greeting', {
-        phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing',
-        expression: 'auto', notice: null, transcript: emptyTranscript, endReason: null,
+        phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing', working: false,
+        awaitingTranscript: false, discards: 0, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: null,
       });
     case 'unavailable':
       return s.phase === 'loading' ? { ...s, phase: 'unavailable', notice: { tone: 'alert', text: input.text } } : s;
+    case 'working-start':
+      if (s.phase !== 'conversation' || s.conversation !== 'thinking' || s.working || input.revision !== s.visualRevision) return s;
+      return show(s, 'working', { working: true });
     case 'one-shot-complete':
       if (input.revision !== s.visualRevision) return s;
       if (s.visual === 'greeting') return show(s, s.phase === 'conversation' ? 'listening' : 'idle');

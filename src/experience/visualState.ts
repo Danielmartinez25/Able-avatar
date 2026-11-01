@@ -3,6 +3,7 @@ export const visualStates = [
   "greeting",
   "listening",
   "thinking",
+  "working",
   "speaking",
   "farewell",
 ] as const;
@@ -29,6 +30,11 @@ export const stateDetails: Record<
   thinking: {
     label: "Pensando",
     description: "Una inclinación curiosa y la mirada hacia arriba.",
+  },
+  working: {
+    label: "Armando",
+    description:
+      "Manos ocupadas en la laptop y la mirada de costado: cubre la espera mientras se crea un agente.",
   },
   speaking: {
     label: "Hablando",

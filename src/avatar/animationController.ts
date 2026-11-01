@@ -216,6 +216,7 @@ export function resolveExpression(
   if (action === "work" || action === "organize") return "focused";
   if (action === "idea") return "excited";
   if (expression !== "auto") return expression;
+  if (state === "working") return "focused";
   if (state === "thinking") return "thinking";
   if (state === "listening") return "curious";
   return "happy";

@@ -2,6 +2,7 @@ import { test, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { createKioskSession, isPlausibleEmail, readKioskConfig } from '../src/integration/able/kioskSession.ts';
 import { createSimulatedKioskWidget, simulatedLevel } from '../src/integration/able/kioskSimulator.ts';
+import { buildKioskInit } from '../src/integration/able/kioskLoader.ts';
 import { mouthFromLevel, smoothSpeechLevel } from '../src/experience/speechLevel.ts';
 
 const env = { VITE_ABLE_CHAT_ID: 'example-agent_public-id', VITE_ABLE_BASE_URL: 'https://able-test.ithreexglobal.com', VITE_KIOSK_KEY: 'test-key' };
@@ -133,4 +134,18 @@ test('simulator emits contract events and ends in the guaranteed order', () => {
     assert.equal(sim.session, 1);
     sim.dispose();
   } finally { mock.timers.reset(); }
+});
+
+test('pauseMs reaches init only when VITE_KIOSK_PAUSE_MS is an integer', () => {
+  const onEvent = () => {};
+  assert.equal(readKioskConfig({ ...env, VITE_KIOSK_PAUSE_MS: ' 2500 ' }).pauseMs, 2500);
+  assert.equal(buildKioskInit(readKioskConfig({ ...env, VITE_KIOSK_PAUSE_MS: '2500' }), onEvent).pauseMs, 2500);
+  for (const value of [undefined, '', '2.5', '2500ms', 'abc', '-1800', '1e3']) {
+    const config = readKioskConfig({ ...env, VITE_KIOSK_PAUSE_MS: value });
+    assert.equal('pauseMs' in config, false, String(value));
+    assert.equal('pauseMs' in buildKioskInit(config, onEvent), false, String(value));
+  }
+  // Out of range is still sent: the widget owns the 1000-4000 rule and falls back to 2200.
+  assert.equal(buildKioskInit(readKioskConfig({ ...env, VITE_KIOSK_PAUSE_MS: '9000' }), onEvent).pauseMs, 9000);
+  assert.deepEqual(Object.keys(buildKioskInit(readKioskConfig(env), onEvent)).sort(), ['baseUrl', 'chatId', 'idleSeconds', 'mode', 'onEvent']);
 });

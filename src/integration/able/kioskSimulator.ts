@@ -12,6 +12,11 @@ export interface SimulatedKioskWidget extends KioskWidget {
   emit(event: KioskEvent): void;
   setState(state: ConversationState, code?: string): void;
   speak(text: string, ms: number): void;
+  /**
+   * Long `thinking`, as while Able builds an agent: after `ms` it either answers or gives up
+   * with `reply_timeout`. Any other injected event cancels the pending outcome.
+   */
+  think(ms: number, outcome: 'reply' | 'timeout' | 'noise'): void;
   finish(reason: EndReason): void;
   /** Simulates an iframe reload: `ready` arrives while a session is running. */
   reload(): void;
@@ -34,7 +39,7 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
   const timers = new Set<ReturnType<typeof setTimeout>>();
   let speaking: ReturnType<typeof setInterval> | undefined;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
-  let session = 0, active = false, ready = false, queued = false;
+  let session = 0, active = false, ready = false, queued = false, thinkToken = 0;
 
   const send = (event: KioskEvent) => {
     const parsed = parseKioskEvent(toKioskMessage(event));
@@ -97,6 +102,7 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
     emit: send,
     setState(value, code) {
       if (!active) return;
+      thinkToken++;
       stopSpeaking(true);
       state(value, code);
       // Contract: the inactivity timer runs in listening/idle/error and pauses while thinking/speaking.
@@ -104,6 +110,7 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
     },
     speak(text, ms) {
       if (!active) return;
+      thinkToken++;
       clearTimeout(idleTimer);
       stopSpeaking(true);
       send({ event: 'transcript', role: 'bot', text, session });
@@ -111,6 +118,18 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
       const started = Date.now();
       speaking = setInterval(() => send({ event: 'audio_level', level: simulatedLevel((Date.now() - started) / 1000), session }), tick);
       later(ms, () => { stopSpeaking(true); state('listening'); armIdle(); });
+    },
+    think(ms, outcome) {
+      if (!active) return;
+      api.setState('thinking');
+      const token = ++thinkToken;
+      later(ms, () => {
+        if (token !== thinkToken) return;
+        if (outcome === 'timeout') api.setState('listening', 'reply_timeout');
+        // Able's noise filter: short thinking, back to listening, no transcript.
+        else if (outcome === 'noise') api.setState('listening');
+        else api.speak('¡Listo, te armé tu agente de comidas, que te da recetas con lo que tenés en la heladera! Cuando terminemos te llega un mail con el link.', 6500);
+      });
     },
     finish(reason) {
       if (!active) return;

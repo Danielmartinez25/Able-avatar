@@ -4,10 +4,16 @@
 .avatar-view{position:absolute;inset:0;z-index:-1}.canvas-wrapper{position:absolute;inset:0}
 .scene-error{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px;color:#566d85}.scene-error button{padding:10px 14px;border:1px solid #c9d8e6;border-radius:8px;background:#fff}
 .sim-badge{position:absolute;top:16px;left:16px;padding:4px 10px;border-radius:6px;background:#f3d27a;color:#5b4210;font-size:12px;font-weight:600;letter-spacing:.08em}
+.sim-tools{position:absolute;top:48px;left:16px;display:flex;flex-wrap:wrap;gap:6px;z-index:3}.sim-tools button{padding:6px 10px;border:1px solid #e4c66e;border-radius:6px;background:#fff8e3;color:#5b4210;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
 /* Hidden staff entry: an invisible corner target, still reachable by keyboard. */
 .staff-corner{position:absolute;top:0;right:0;width:72px;height:72px;border:0;background:transparent;opacity:0}.staff-corner:focus-visible{opacity:1;background:#ffffffaa;border-radius:0 0 0 16px}
 .talk{position:absolute;left:50%;bottom:clamp(16px,4vh,40px);transform:translateX(-50%);width:min(760px,calc(100% - 32px));padding:clamp(14px,2.4vh,22px) clamp(16px,3vw,26px);border:1px solid #ffffffcc;border-radius:22px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014;backdrop-filter:blur(14px)}
-.talk-status{display:flex;align-items:center;gap:10px;margin:0;font-size:clamp(16px,2.2vw,22px);font-weight:600;color:#197fa5}.talk-status[data-state=thinking]{color:#6b5fa8}.talk-status[data-state=error]{color:#a4432a}
+.talk-status{display:flex;align-items:center;gap:10px;margin:0;font-size:clamp(16px,2.2vw,22px);font-weight:600;color:#197fa5}.talk-status[data-state=thinking],.talk-status[data-state=working]{color:#6b5fa8}.talk-status[data-state=error]{color:#a4432a}
+/* Working mode: a speech bubble above the card, pointing up at Able (workingMode.ts). */
+.working-region{position:absolute;left:0;right:0;bottom:calc(100% + 16px);display:flex;justify-content:center;pointer-events:none}
+.working-bubble{position:relative;max-width:min(520px,100%);margin:0;padding:12px 20px;border-radius:18px;background:#fff;box-shadow:0 10px 30px #2a4d7022;font-size:clamp(16px,2.1vw,21px);font-weight:600;color:#3d3a6b;text-align:center;animation:bubble-in .3s ease-out}
+.working-bubble::before{content:"";position:absolute;left:50%;top:-8px;width:16px;height:16px;background:#fff;transform:translateX(-50%) rotate(45deg)}
+@keyframes bubble-in{from{opacity:0;transform:translateY(6px)}}@media(prefers-reduced-motion:reduce){.working-bubble{animation:none}}
 .talk-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e3f2f8;font-size:18px;flex-shrink:0}.talk-status[data-state=listening] .talk-icon{animation:talk-pulse 1.6s ease-in-out infinite}
 @keyframes talk-pulse{50%{box-shadow:0 0 0 8px #1885ab22}}@media(prefers-reduced-motion:reduce){.talk-status .talk-icon{animation:none}}
 .subtitles{margin:12px 0;max-height:7.5em;overflow:hidden;display:flex;flex-direction:column;gap:6px}.line{margin:0;font-size:clamp(15px,2vw,20px);line-height:1.4;color:#33474c}.line>span{display:inline-block;min-width:48px;margin-right:8px;font-size:.66em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a978b}.line.bot>span{color:#188db9}.line.hint{color:#7f8c80;font-style:italic}

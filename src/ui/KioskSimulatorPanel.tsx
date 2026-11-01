@@ -23,6 +23,9 @@ export function KioskSimulatorPanel({ kiosk }: { kiosk: Kiosk }) {
     ["Escuchando", () => simulator?.setState("listening")],
     ["Pensando", () => simulator?.setState("thinking")],
     ["Hablando 4 s", () => simulator?.speak("Esta es una respuesta de prueba para mover la boca.", 4000)],
+    ["Thinking largo · 90 s", () => simulator?.think(90000, "reply")],
+    ["Timeout · 240 s", () => simulator?.think(240000, "timeout")],
+    ["Ruido descartado", () => simulator?.think(1500, "noise")],
     ["No te entendí", () => simulator?.setState("listening", "turn_failed")],
     ["Sin audio", () => simulator?.setState("listening", "playback_blocked")],
     ["Micrófono denegado", () => simulator?.setState("error", "mic_denied")],
@@ -51,6 +54,7 @@ export function KioskSimulatorPanel({ kiosk }: { kiosk: Kiosk }) {
       </div>
       <div className="kiosk-sim-log" aria-live="polite">
         {snapshot.notice && <p className={"tone-" + snapshot.notice.tone}>{snapshot.notice.text}</p>}
+        {kiosk.workingPhrase && <p><strong>Armando</strong> {kiosk.workingPhrase}</p>}
         {snapshot.transcript.user && <p><strong>Vos</strong> {snapshot.transcript.user}</p>}
         {snapshot.transcript.bot && <p><strong>Able</strong> {snapshot.transcript.bot}</p>}
       </div>

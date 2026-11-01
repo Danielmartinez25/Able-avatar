@@ -15,7 +15,10 @@ const talkStatus: Record<Conversation, { icon: string; text: string }> = {
   speaking: { icon: '♪', text: 'Able está hablando' },
 };
 const idlePhases = ['loading', 'unavailable', 'operator'];
+const workingStatus = { icon: '⚙', text: 'Armando tu agente…' };
 const aiNote = 'La charla se procesa con IA y no se guarda en el tótem.';
+const beforeStartNote = 'La charla se procesa con IA. Al terminar te llegan tus agentes y el acceso a tu cuenta por mail.';
+const startHint = 'Contale al avatar qué agente te gustaría tener, por ejemplo uno que te dé recetas o uno que responda a tus clientes.';
 const isStaffShortcut = (event: KeyboardEvent) => event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'm';
 
 /** Able alone on screen. The staff panel is hidden behind a corner button or Ctrl+M. */
@@ -96,25 +99,36 @@ export function TotemApp(){
   const closePanel=()=>{setPanelOpen(false);corner.current?.focus({preventScroll:true});};
   const polite=snapshot.notice && snapshot.notice.tone!=='alert' ? snapshot.notice.text : '';
   const assertive=snapshot.notice?.tone==='alert' ? snapshot.notice.text : '';
-  const status=snapshot.conversation ? talkStatus[snapshot.conversation] : null;
+  // Working mode rotates its own animations; negative revisions never clash with `action`'s.
+  const beat=kiosk.workingBeat;
+  const sceneAction:ActionPlayback=beat ? {name:beat.action,revision:-2-beat.index} : action;
+  const status=snapshot.working ? workingStatus : snapshot.conversation ? talkStatus[snapshot.conversation] : null;
   return <main className="totem" data-phase={snapshot.phase}>
     <div className="avatar-view">
       <SpeechLevelContext value={kiosk.speech}>
-        <AvatarScene state={snapshot.visual} revision={snapshot.visualRevision} expression={snapshot.expression} action={action} reducedMotion={reducedMotion} onReact={greet}/>
+        <AvatarScene state={snapshot.visual} revision={snapshot.visualRevision} expression={snapshot.expression} action={sceneAction} reducedMotion={reducedMotion} onReact={greet}/>
       </SpeechLevelContext>
     </div>
     {kiosk.mode==='simulated' && <span className="sim-badge">SIMULACIÓN</span>}
+    {kiosk.mode==='simulated' && snapshot.phase==='conversation' && <div className="sim-tools" role="group" aria-label="Escenarios simulados">
+      <button type="button" onClick={()=>kiosk.simulator?.think(90000,'reply')}>Thinking largo · 90 s</button>
+      <button type="button" onClick={()=>kiosk.simulator?.think(240000,'timeout')}>Timeout · 240 s</button>
+      <button type="button" onClick={()=>kiosk.simulator?.think(1500,'noise')}>Ruido descartado</button>
+    </div>}
     <button ref={corner} className="staff-corner" aria-label="Abrir panel del staff (Ctrl+M)" aria-expanded={panelOpen} aria-controls="staff-panel" onClick={()=>setPanelOpen(open=>!open)}/>
 
     {inSession && <section className="talk" aria-label="Charla con Able">
-      <p className="talk-status" data-state={snapshot.phase==='error' ? 'error' : snapshot.conversation ?? ''}>
+      <div className="working-region" aria-live="polite">
+        {kiosk.workingPhrase && <p key={kiosk.workingPhrase} className="working-bubble">{kiosk.workingPhrase}</p>}
+      </div>
+      <p className="talk-status" data-state={snapshot.phase==='error' ? 'error' : snapshot.working ? 'working' : snapshot.conversation ?? ''}>
         <span className="talk-icon" aria-hidden="true">{snapshot.phase==='error' ? '!' : status?.icon}</span>
         {snapshot.phase==='error' ? 'Able necesita ayuda del staff' : status?.text}
       </p>
       <div className="subtitles" aria-live="polite">
         {snapshot.transcript.user && <p className="line user"><span>Vos</span>{snapshot.transcript.user}</p>}
         {snapshot.transcript.bot && <p className="line bot"><span>Able</span>{snapshot.transcript.bot}</p>}
-        {!snapshot.transcript.user && !snapshot.transcript.bot && <p className="line hint">Pedile, por ejemplo: «Creame un agente que responda las preguntas de mi negocio».</p>}
+        {!snapshot.transcript.user && !snapshot.transcript.bot && <p className="line hint">{startHint}</p>}
       </div>
       <div className="talk-footer">
         <p className="ai-note">{aiNote}</p>
@@ -123,8 +137,8 @@ export function TotemApp(){
     </section>}
 
     {snapshot.phase==='farewell' && <section className="farewell" role="status">
-      <strong>¡Gracias por pasar!</strong>
-      <span>{snapshot.endReason==='idle' ? 'Me quedé esperando, así que cerramos la charla. ' : ''}Te llega un mail para elegir tu contraseña y ver tu agente en Able.</span>
+      <strong>¡Listo!</strong>
+      <span>{snapshot.endReason==='idle' ? 'Me quedé esperando, así que cerramos la charla. ' : ''}Revisá tu mail: te mandamos tus agentes y un link para entrar a tu cuenta.</span>
     </section>}
 
     <div className="notices">
@@ -145,7 +159,7 @@ export function TotemApp(){
           {snapshot.phase==='creating' ? 'Creando…' : snapshot.phase==='operator' ? 'Empezar' : snapshot.phase==='unavailable' ? 'No disponible' : inSession ? 'Charla en curso' : 'Preparando…'}
         </button>
       </form>
-      <p id="staff-note" className="ai-note">{aiNote} Al visitante le llega un mail para entrar a su cuenta de Able.</p>
+      <p id="staff-note" className="ai-note">{beforeStartNote}</p>
       <div className="staff-tools">
         {snapshot.phase==='unavailable' && <button type="button" onClick={kiosk.retry}>Reintentar</button>}
         <button type="button" onClick={toggleFullscreen}>{fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}</button>

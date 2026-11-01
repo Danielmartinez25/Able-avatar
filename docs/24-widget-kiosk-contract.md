@@ -175,3 +175,21 @@ El widget no tiene UI; la experiencia accesible la arma able-avatar con este con
 - **Timeout de `ready`**: si no llega en ~15 s, pantalla "no disponible" con reintento.
 - **Despedida**: en `session_ended`, despedida corta y vuelta al modo feria; con `unauthorized`, volver a la pantalla de mail.
 - **Latencia**: los eventos salen en el mismo momento del cambio; aplicar la animación sin esperar al próximo frame de `audio_level`.
+
+## Anexo (2026-11-01, novedad comunicada por agenthreex, pendiente de sumar al contrato oficial)
+
+- `AbleWidget.init` acepta `pauseMs`: milisegundos de silencio que cierran un turno, entero entre
+  1000 y 4000. Fuera de rango o ausente: 2200.
+- Filtro de ruido: un turno con menos de 400 ms de voz no emite eventos (sigue `listening`). Si la
+  transcripción queda vacía, es una muletilla o una alucinación conocida, llega `state: thinking` y
+  enseguida `state: listening`, sin `transcript` ni respuesta.
+- `reply_timeout` llega a los 240 s.
+- Detección de voz con el iframe oculto (MR !633): el detector cuenta la voz por tiempo real, así
+  que funciona aunque Chrome frene los timers del iframe. Recomendación de agenthreex: iframe de
+  tamaño real (por ejemplo 320×480), dentro del viewport y tapado por la página (sin `opacity: 0`,
+  `visibility: hidden` ni `display: none`), conservando `allow="microphone; autoplay"`,
+  `pointer-events: none` y el postMessage. Así el turno cierra justo al cumplirse `pauseMs`.
+- Precondición de servidor: el rol por defecto que reciben las cuentas creadas por
+  `/api/kiosk/session` necesita `skills:create`, `agents:create`, `skills:use` y `agents:use` para
+  que el agente del tótem pueda crearle agentes al visitante (Administración > Roles). Los permisos
+  de cada usuario quedan 60 s en caché.

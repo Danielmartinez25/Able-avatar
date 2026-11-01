@@ -135,5 +135,99 @@ laboratorio, `AvatarScene`), sin titulares, tarjetas ni burbuja de chat. La ofic
 
   No se resuelve en este repo (prompt, TTS y créditos son de Able). Reportado a agenthreex: respuestas
   cortas en voz o TTS por partes, y revisar el consumo de créditos.
+
+## Agente del tótem y modo trabajando (2026-11-01)
+
+Able preparó una copia del Asistente Able para el tótem (nuevo `VITE_ABLE_CHAT_ID` en `.env.local`):
+responde corto, y cuando el visitante dice qué agente quiere lo crea en ese mismo turno. Eso deja el
+widget en `state: thinking` entre 75 y 130 s, sin eventos de avance ni audio.
+
+- **Modo trabajando.** Si `thinking` dura 5 s (`workingDelayMs`), el adaptador pasa a `working: true`
+  y al estado visual `working`. Cada 3 a 5 s cambia de animación de trabajo (laptop, lupa, lista de
+  tareas, lamparita) y de frase. Cada animación tiene sus frases y nunca se repiten seguidas. Desde
+  los 60 s de `thinking` solo hay frases de cierre. Las frases se muestran en un globo
+  `aria-live="polite"` (`src/experience/workingMode.ts`). Es un relleno local: el contrato v1 no
+  dice qué herramienta está usando Able. Para ligar cada animación al paso real haría falta un
+  evento nuevo en el contrato, que todavía no existe.
+- **Corte.** Solo otro `thinking` de la sesión actual lo mantiene (`keepsWorking`). Cualquier otro
+  evento lo corta, incluidos `audio_level` y los eventos de una sesión vieja, que además se ignoran.
+  El clip se corta de forma sincrónica en el manejador de eventos de `useKiosk`, antes del render;
+  el globo y la animación, en el render siguiente.
+- **Audio.** Opcional, con clips pregrabados en `public/audio/working/` y registrados en
+  `workingClips` (ver el README de esa carpeta). Hoy no hay clips. `mayPlayClip` impide que suenen
+  fuera de `thinking`.
+- **`reply_timeout`.** Sin cambios en la lógica: llega `listening` con el código y se muestra
+  "Tardé demasiado, ¿me repetís?" sin cortar la sesión. No depende del tope del widget (120 s,
+  después 240 s).
+- **Simulador.** "Thinking largo · 90 s" y "Timeout · 120 s", en el panel del laboratorio y en
+  `totem.html?simulate` (arriba a la izquierda, solo en simulación).
+- **Textos.** Aviso del staff, pista de inicio y despedida, según la actualización: la despedida
+  nombra los dos mails.
+- **Prueba real con el agente nuevo (2026-11-01):** STT y respuesta OK (`answer` 200, respuestas
+  cortas: ya no aparece el 413). Sin voz: `consume-credits` → 403 "Error al consumir créditos" y
+  `synthesize` → 403, así que llega `turn_failed`. Créditos del lado de Able; reportado a agenthreex.
+  Además: con un auricular Bluetooth (H848) el widget quedaba en `listening` sin tomar la voz; con
+  otro micrófono anduvo. En el stand, usar un micrófono con cable.
+- `PerformanceProps.tsx` es parte del snapshot archivado de ABLE-003 y no se puede modificar
+  (`tests/able-003.test.ts`). La laptop persistente se arma en `ProvisionalAvatar.tsx`
+  reutilizando `PerformanceProps` en modo `reducedMotion`, que no la apaga a los 6,5 s.
 - Pendiente de la Fase 2 por la rev. 2: los textos de la despedida y del aviso del staff nombran un
   solo mail; el plan pide los dos ("tus agentes" y "elegí tu contraseña").
+
+## Novedades de Able: pausas, ruido y `pauseMs` (2026-11-01)
+
+En develop, visibles en test después del próximo deploy. Del lado de Able:
+- El turno se cierra a los 2,2 s de silencio (antes 1,2 s).
+- El umbral de voz se adapta al ruido ambiente.
+- Los turnos con menos de 400 ms de voz se descartan sin evento.
+- Si la transcripción queda vacía, es una muletilla o es una frase que inventa Whisper, el estado pasa de `thinking` a `listening` sin `transcript`.
+- `reply_timeout` ahora llega a los 240 s (antes 120 s).
+- El cobro va al dueño del agente.
+
+En el tótem:
+- **`VITE_KIOSK_PAUSE_MS`** (opcional): se pasa a `init` como `pauseMs` solo si es un entero
+  (`buildKioskInit` en `kioskLoader.ts`). El rango 1000–4000 lo valida el widget: fuera de ese rango
+  o sin la variable, usa 2200. Para calibrar en el stand: si corta a la gente, subirla a 2500–3000;
+  si tarda en responder después de que la persona termina, bajarla a 1800.
+- **Turno descartado** (`thinking` → `listening` sin `code` ni `transcript` del visitante): no se
+  muestra error. El modo trabajando no arranca porque la revisión del timer queda vieja. El avatar
+  vuelve a escuchar con la interpolación normal de la pose.
+- **Pista del micrófono**: con 2 descartes seguidos aparece el aviso amable "Acercate un poco al
+  micrófono y hablá claro 🙂". El contador vuelve a 0 con un `transcript` del visitante o con una
+  sesión nueva. No cuentan los turnos normales (`speaking` → `listening`) ni los avisos con `code`
+  (`reply_timeout`, `turn_failed`). El aviso se borra en el próximo `thinking`.
+- Simulador: el botón "Timeout" pasa a 240 s y se agrega "Ruido descartado" (1,5 s de `thinking` y
+  vuelta a `listening`).
+- Pendiente, prueba contra test después del deploy:
+  1. Una pausa de 1,5 s en el medio de una frase no corta el turno.
+  2. Un golpe en la mesa o ruido de fondo no abre una respuesta.
+  3. Al pedir un agente se ve el modo trabajando y "¡Listo, te armé…!" a los 75–100 s.
+  4. Calibrar `VITE_KIOSK_PAUSE_MS`.
+- **Prueba contra test (2026-11-01), hallazgo:** con el deploy nuevo, en kiosco el widget queda en
+  `listening` y nunca detecta voz, aunque la sesión (200) y el WebSocket se conectan bien. Con el
+  mismo micrófono, el widget común de `able-test` sí toma la voz. Si desde la consola se agranda el
+  iframe del kiosco (contenedor `able-widget-container` e iframe `able-widget-iframe` a 320×480,
+  visibles), la voz anda normal: transcript, respuesta y voz. Causa probable: `able-widget.js`
+  arma el iframe en 1×1 px, con `opacity: 0` y `z-index: -1`, y Chrome frena los iframes de otro
+  dominio que no se ven. El detector de voz nuevo depende de algo que queda frenado. Es del lado de
+  Able; reportado a agenthreex. No se parchea desde el tótem porque implicaría tocar el DOM interno
+  del widget, fuera del contrato.
+- **Respuesta de agenthreex (2026-11-01):**
+  - **Voz en kiosco:** arreglado en MR !633, pendiente de deploy en test. El detector mide el micrófono
+    con un `setInterval`, y Chrome lo frena a más o menos un tick por segundo en un iframe de otro
+    dominio que no se ve. Con el mínimo de 400 ms de voz, las frases se descartaban. Ahora cuenta la
+    voz por tiempo real y anda igual con el iframe oculto. `audio_level` sigue sin retraso.
+  - **Mejora recomendada, no obligatoria:** iframe con tamaño real (320×480), dentro del viewport y tapado por
+    la página, sin `opacity: 0`, `visibility: hidden` ni `display: none`. Así el turno cierra justo a
+    los 2,2 s y no hasta 1 s después. Ese iframe lo crea `createKioskWidget()` en `able-widget.js`,
+    de Able. Se pidió que lo cambien ahí. Plan B si no llega antes de la Tech Week: cambiarles el
+    estilo a `#able-widget-container` y `#able-widget-iframe` después de `init`, sin tocar `allow`,
+    `sandbox` ni el postMessage, y poner `.totem` con `z-index: 1` para que tape el iframe.
+  - **403 en `create_skill` y `create_agent`:** era la configuración de Able. El rol por defecto de
+    las cuentas del kiosco necesita `skills:create`, `agents:create`, `skills:use` y `agents:use`. Se
+    configura en Administración > Roles. El tótem no cambia.
+  - **Prueba cuando avisen del deploy:** (1) con el iframe oculto como hoy, "quiero un agente de
+    recetas" tiene que dar `thinking`, transcript y voz; (2) pedir que lo cree **con un mail nuevo**
+    (los permisos quedan 60 s en caché): sin 403, con el modo trabajando y la confirmación;
+    (3) si se cambia el iframe, repetir el paso 1 y fijarse que la pausa se sienta pareja.
+

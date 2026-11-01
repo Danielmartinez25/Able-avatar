@@ -7,6 +7,8 @@ export interface KioskConfig {
   /** Extractable from the bundle by design (accepted risk, see docs/23-kiosco-implementation.md). */
   kioskKey: string;
   idleSeconds: number;
+  /** Silence (ms) that closes a voice turn. Only set for an integer; the widget validates 1000-4000. */
+  pauseMs?: number;
 }
 
 /** Returns null when the kiosk is not configured; throws on malformed values. */
@@ -16,7 +18,9 @@ export function readKioskConfig(env: Record<string, string | undefined>): KioskC
   if (!widget || !kioskKey) return null;
   const rawIdle = Number(env.VITE_KIOSK_IDLE_SECONDS?.trim() || 60);
   const idleSeconds = Number.isFinite(rawIdle) ? Math.round(Math.min(3600, Math.max(15, rawIdle))) : 60;
-  return { baseUrl: widget.baseUrl, chatId: widget.chatId, kioskKey, idleSeconds };
+  const rawPause = env.VITE_KIOSK_PAUSE_MS?.trim() ?? '';
+  const pause = /^\d+$/.test(rawPause) ? { pauseMs: Number(rawPause) } : {};
+  return { baseUrl: widget.baseUrl, chatId: widget.chatId, kioskKey, idleSeconds, ...pause };
 }
 
 export function isPlausibleEmail(email: string) {

@@ -22,6 +22,25 @@ import { mouthFromLevel, smoothSpeechLevel } from "../experience/speechLevel";
 import { SpeechLevelContext } from "./speechContext";
 
 const blue = "#039bff";
+const workingLaptop: ActionPlayback = { name: "work", revision: -1 };
+/**
+ * Working mode keeps the `work` laptop out for as long as the agent takes to build. The archived
+ * PerformanceProps fades it after 6.5 s, so it runs in hold mode (reducedMotion) under its own
+ * scale-in.
+ */
+function WorkingLaptop({ reducedMotion }: { reducedMotion: boolean }) {
+  const group = useRef<Group>(null);
+  useFrame((_, delta) => {
+    if (!group.current || reducedMotion) return;
+    const scale = group.current.scale.x;
+    group.current.scale.setScalar(scale + (1 - scale) * (1 - Math.exp(-Math.min(delta, 0.1) * 12)));
+  });
+  return (
+    <group ref={group} scale={reducedMotion ? 1 : 0.001}>
+      <PerformanceProps action={workingLaptop} reducedMotion />
+    </group>
+  );
+}
 export function ProvisionalAvatar({
   state,
   revision,
@@ -325,7 +344,9 @@ export function ProvisionalAvatar({
             </mesh>
           ))}
         </group>
-        <PerformanceProps action={action} reducedMotion={reducedMotion} />
+        {state === "working" && !action.name
+          ? <WorkingLaptop reducedMotion={reducedMotion} />
+          : <PerformanceProps action={action} reducedMotion={reducedMotion} />}
         <DocumentsProp action={action} reducedMotion={reducedMotion} />
       </group>
       <ExpressionAccents
