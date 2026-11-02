@@ -2,10 +2,14 @@ import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState }
 import { oneShotDuration } from '../../experience/visualState';
 import { createSpeechLevel } from '../../experience/speechLevel';
 import { createWorkingAudio } from '../../experience/workingAudio';
-import { advanceBeat, firstBeat, mayPlayClip, workingDelayMs } from '../../experience/workingMode';
+import { activityMotion, activityWaitMs, settleActivity } from '../../experience/activityMotion';
+import { beatIntervalMs, mayPlayClip, nextBeat, workingDelayMs } from '../../experience/workingMode';
 import type { WorkingBeat } from '../../experience/workingMode';
-import { applyAudioLevel, initialKioskSnapshot, keepsWorking, kioskReducer } from './kioskAdapter';
-import type { KioskEvent, KioskWidget } from './kioskContract';
+import {
+  applyAudioLevel, connectionLostNotice, errorAutoEndMs, initialKioskSnapshot, keepsWorking, kioskReducer, stuckThinkingMs,
+} from './kioskAdapter';
+import type { Notice } from './kioskAdapter';
+import type { KioskActivity, KioskEvent, KioskWidget } from './kioskContract';
 import { ensureKioskWidget, onKioskEvent } from './kioskLoader';
 import { createKioskSession, readKioskConfig } from './kioskSession';
 import type { KioskConfig } from './kioskSession';
@@ -88,23 +92,42 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
     return () => clearTimeout(timer);
   }, [snapshot.phase, snapshot.visual, snapshot.visualRevision]);
 
+  // Able's activity on screen: the latest one reported, each held at least `minActivityMs`.
+  const thinkingNow = snapshot.phase === 'conversation' && snapshot.conversation === 'thinking';
+  const [shown, setShown] = useState<{ activity: KioskActivity; since: number } | null>(null);
+  useEffect(() => {
+    if (!thinkingNow) return setShown(null);
+    const target = snapshot.activity && settleActivity(shown?.activity ?? null, snapshot.activity);
+    if (!target || target === shown?.activity) return;
+    const timer = setTimeout(() => setShown({ activity: target, since: Date.now() }), activityWaitMs(shown?.since ?? null, Date.now()));
+    return () => clearTimeout(timer);
+  }, [thinkingNow, snapshot.activity, shown]);
+  // Gated on the snapshot so leaving `thinking` cuts the activity in the same render.
+  const activity = thinkingNow ? shown?.activity ?? null : null;
+  const shownActivity = useRef(activity);
+  useLayoutEffect(() => { shownActivity.current = activity; }, [activity]);
+
+  const beatNow = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!snapshot.working) return;
-    let beat = firstBeat();
+    const startedAt = Date.now() - workingDelayMs;
+    let beat: WorkingBeat | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const show = () => {
+    const step = () => {
+      clearTimeout(timer);
+      const current = shownActivity.current;
+      beat = nextBeat(beat, Date.now() - startedAt, current ? activityMotion[current].action : undefined);
       setWorkingBeat(beat);
       const { working, conversation } = latest.current;
       if (mayPlayClip(working, conversation)) workingAudio.play(beat.text);
+      timer = setTimeout(step, beatIntervalMs(beat.action));
     };
-    const schedule = () => {
-      const next = advanceBeat(beat);
-      timer = setTimeout(() => { beat = next; show(); schedule(); }, next.at - beat.at);
-    };
-    show();
-    schedule();
-    return () => { clearTimeout(timer); workingAudio.stop(); setWorkingBeat(null); };
+    step();
+    beatNow.current = step;
+    return () => { clearTimeout(timer); beatNow.current = null; workingAudio.stop(); setWorkingBeat(null); };
   }, [snapshot.working, workingAudio]);
+  // A new activity brings a phrase that matches it right away.
+  useEffect(() => { if (activity) beatNow.current?.(); }, [activity]);
 
   useEffect(() => {
     const duration = oneShotDuration[snapshot.visual];
@@ -118,6 +141,27 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
     const timer = setTimeout(() => dispatch({ type: 'farewell-done' }), farewellCardMs);
     return () => clearTimeout(timer);
   }, [snapshot.phase]);
+
+  /** Ends the widget session and goes straight back to the mail screen, without waiting for Able. */
+  const abort = useCallback((notice: Notice) => {
+    workingAudio.stop();
+    widget.current?.endSession();
+    dispatch({ type: 'reset', notice });
+  }, [workingAudio]);
+
+  // Stuck in thinking: if even reply_timeout never came, the connection with Able is gone.
+  useEffect(() => {
+    if (snapshot.phase !== 'conversation' || snapshot.conversation !== 'thinking') return;
+    const timer = setTimeout(() => abort(connectionLostNotice), stuckThinkingMs);
+    return () => clearTimeout(timer);
+  }, [snapshot.phase, snapshot.conversation, snapshot.session, abort]);
+
+  // A terminal error is shown for a moment, then the totem frees itself; the staff keeps the message.
+  useEffect(() => {
+    if (snapshot.phase !== 'error') return;
+    const timer = setTimeout(() => abort(latest.current.notice), errorAutoEndMs);
+    return () => clearTimeout(timer);
+  }, [snapshot.phase, abort]);
 
   /** Call from the staff click handler: startSession needs that user activation. */
   const start = useCallback(async (email: string) => {
@@ -154,6 +198,7 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
     // Gated on the snapshot so a cut never leaves the old phrase or animation on screen for a render.
     workingBeat: snapshot.working ? workingBeat : null,
     workingPhrase: snapshot.working ? workingBeat?.text ?? null : null,
+    activity,
   };
 }
 

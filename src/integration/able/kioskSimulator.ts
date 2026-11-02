@@ -1,4 +1,4 @@
-import type { ConversationState, EndReason, KioskEvent, KioskWidget } from './kioskContract.ts';
+import type { ConversationState, EndReason, KioskActivity, KioskEvent, KioskWidget } from './kioskContract.ts';
 import { parseKioskEvent, toKioskMessage } from './kioskContract.ts';
 import { isPlausibleEmail, sessionNotices } from './kioskSession.ts';
 import type { SessionResult } from './kioskSession.ts';
@@ -11,7 +11,8 @@ export interface SimulatedKioskWidget extends KioskWidget {
   /** Raw injection for the lab panel; events go through the same parser as the real widget. */
   emit(event: KioskEvent): void;
   setState(state: ConversationState, code?: string): void;
-  speak(text: string, ms: number): void;
+  /** `worked`: the agent created or edited something in this turn (PRD 037). */
+  speak(text: string, ms: number, worked?: boolean): void;
   /**
    * Long `thinking`, as while Able builds an agent: after `ms` it either answers or gives up
    * with `reply_timeout`. Any other injected event cancels the pending outcome.
@@ -65,8 +66,16 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => api.finish('idle'), idleSeconds * 1000);
   };
-  const state = (value: ConversationState, code?: string) =>
-    send({ event: 'state', state: value, session, ...(code ? { code } : {}) });
+  const state = (value: ConversationState, code?: string, worked?: boolean) =>
+    send({ event: 'state', state: value, session, ...(code ? { code } : {}), ...(worked ? { worked } : {}) });
+  /** Activities as Able sends them while building an agent: search, then thinking/working flipping fast, then finishing. */
+  const activities = (ms: number, token: number) => {
+    const activity = (value: KioskActivity) => () => { if (token === thinkToken) send({ event: 'activity', activity: value, session }); };
+    later(300, activity('searching'));
+    later(2500, activity('thinking'));
+    for (let at = 4000, i = 0; at < ms - 4000; at += 350 + (i % 3) * 400, i++) later(at, activity(i % 2 ? 'thinking' : 'working'));
+    later(Math.max(500, ms - 2500), activity('finishing'));
+  };
 
   const script = () => {
     const turns = [
@@ -108,13 +117,13 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
       // Contract: the inactivity timer runs in listening/idle/error and pauses while thinking/speaking.
       if (value === 'thinking' || value === 'speaking') clearTimeout(idleTimer); else armIdle();
     },
-    speak(text, ms) {
+    speak(text, ms, worked) {
       if (!active) return;
       thinkToken++;
       clearTimeout(idleTimer);
       stopSpeaking(true);
       send({ event: 'transcript', role: 'bot', text, session });
-      state('speaking');
+      state('speaking', undefined, worked);
       const started = Date.now();
       speaking = setInterval(() => send({ event: 'audio_level', level: simulatedLevel((Date.now() - started) / 1000), session }), tick);
       later(ms, () => { stopSpeaking(true); state('listening'); armIdle(); });
@@ -123,12 +132,13 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
       if (!active) return;
       api.setState('thinking');
       const token = ++thinkToken;
+      if (outcome === 'reply') activities(ms, token);
       later(ms, () => {
         if (token !== thinkToken) return;
         if (outcome === 'timeout') api.setState('listening', 'reply_timeout');
         // Able's noise filter: short thinking, back to listening, no transcript.
         else if (outcome === 'noise') api.setState('listening');
-        else api.speak('¡Listo, te armé tu agente de comidas, que te da recetas con lo que tenés en la heladera! Cuando terminemos te llega un mail con el link.', 6500);
+        else api.speak('¡Listo, te armé tu agente de comidas, que te da recetas con lo que tenés en la heladera! Cuando terminemos te llega un mail con el link.', 6500, true);
       });
     },
     finish(reason) {

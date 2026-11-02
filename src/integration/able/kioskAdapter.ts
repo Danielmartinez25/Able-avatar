@@ -1,6 +1,6 @@
 import type { SpeechLevel } from '../../experience/speechLevel.ts';
 import type { VisualState } from '../../experience/visualState.ts';
-import type { EndReason, KioskEvent } from './kioskContract.ts';
+import type { EndReason, KioskActivity, KioskEvent } from './kioskContract.ts';
 import { genericTerminalMessage, recoverableCodes, terminalCodes } from './kioskContract.ts';
 
 export type KioskPhase = 'loading' | 'unavailable' | 'operator' | 'creating' | 'conversation' | 'error' | 'farewell';
@@ -20,6 +20,10 @@ export interface KioskSnapshot {
   conversation: Conversation | null;
   /** Working mode: a long `thinking` is covered with local phrases and the `working` animation. */
   working: boolean;
+  /** Latest `activity` of the current `thinking`; null outside it. */
+  activity: KioskActivity | null;
+  /** The current `speaking` comes from a turn where the agent created or edited something. */
+  worked: boolean;
   /** A `thinking` is waiting for the visitor's `transcript`; without one Able discarded the turn as noise. */
   awaitingTranscript: boolean;
   /** Noise turns in a row since the last visitor `transcript`; two of them show `micHint`. */
@@ -52,6 +56,8 @@ export const initialKioskSnapshot: KioskSnapshot = {
   endedSession: 0,
   conversation: null,
   working: false,
+  activity: null,
+  worked: false,
   awaitingTranscript: false,
   discards: 0,
   visual: 'idle',
@@ -62,6 +68,18 @@ export const initialKioskSnapshot: KioskSnapshot = {
   endReason: null,
 };
 const emptyTranscript = { user: '', bot: '' };
+/** Able sends `reply_timeout` after this long in `thinking` (PRD 037, 2026-11-02). */
+export const replyTimeoutMs = 120000;
+/** Building the visitor's agent takes 75-130 s; anything shorter must never be cut. */
+export const slowestReplyMs = 130000;
+/**
+ * Past this the connection with Able is assumed gone (the widget has no event for that yet), so the
+ * totem ends the session on its own. Only a safety net: `reply_timeout` and `connection_lost` come first.
+ */
+export const stuckThinkingMs = slowestReplyMs + 20000;
+export const connectionLostNotice: Notice = { tone: 'warning', text: 'Se cortó la conexión con Able. Probá de nuevo con el visitante.' };
+/** A terminal error stays on screen this long, then the totem frees itself for the next visitor. */
+export const errorAutoEndMs = 8000;
 export const micHint: Notice = { tone: 'info', text: 'Acercate un poco al micrófono y hablá claro 🙂' };
 const discardsForHint = 2;
 const inSession = (s: KioskSnapshot) => s.phase === 'conversation' || s.phase === 'error';
@@ -78,6 +96,8 @@ function backToOperator(s: KioskSnapshot, notice: Notice): KioskSnapshot {
     endedSession: Math.max(s.endedSession, s.session ?? 0),
     conversation: null,
     working: false,
+    activity: null,
+    worked: false,
     awaitingTranscript: false,
     discards: 0,
     expression: 'auto',
@@ -121,13 +141,13 @@ function terminalText(code: string | undefined, error: string | undefined) {
   return error ? error + ' Llamá al staff.' : genericTerminalMessage;
 }
 
-/** Only another `thinking` of the current session keeps working mode; anything else cuts it. */
+/** Only another `thinking` or an `activity` of the current session keeps working mode; anything else cuts it. */
 export const keepsWorking = (s: KioskSnapshot, e: KioskEvent) =>
-  e.event === 'state' && e.state === 'thinking' && e.session !== undefined && e.session === s.session;
+  ((e.event === 'state' && e.state === 'thinking') || e.event === 'activity') && e.session !== undefined && e.session === s.session;
 
 function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
   if (s.working) {
-    if (keepsWorking(s, e)) return s;
+    if (keepsWorking(s, e)) return e.event === 'activity' ? { ...s, activity: e.activity } : s;
     // Cut first, even for events that are discarded below (stale sessions, audio levels).
     s = show(s, 'thinking', { working: false });
   }
@@ -143,6 +163,8 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
   if (e.event === 'state' && e.session === undefined && e.state !== 'error') return s;
   if (!acceptsSession(s, e.session)) return s;
   const current = adopt(s, e.session);
+  if (e.event === 'activity')
+    return current.phase === 'conversation' && current.conversation === 'thinking' ? { ...current, activity: e.activity } : current;
   if (e.event === 'transcript') {
     const heard = e.role === 'user' ? { awaitingTranscript: false, discards: 0 } : {};
     return { ...current, ...heard, transcript: { ...current.transcript, [e.role]: e.text } };
@@ -155,17 +177,17 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
       return backToOperator({ ...current, endedSession: ended }, { tone: 'warning', text: 'La sesión venció. Ingresá el mail de nuevo.' });
     return show(current, 'farewell', {
       phase: 'farewell', session: null, awaitingSession: false, endedSession: ended,
-      conversation: null, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: e.reason,
+      conversation: null, activity: null, worked: false, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: e.reason,
     });
   }
   if (e.state === 'error')
     return show(current, 'idle', {
-      phase: 'error', conversation: null, expression: 'doubtful',
+      phase: 'error', conversation: null, activity: null, worked: false, expression: 'doubtful',
       notice: { tone: 'alert', text: terminalText(e.code, e.error) },
     });
   if (current.phase === 'error') return current;
   if (e.state === 'idle')
-    return show(current, current.visual === 'greeting' ? 'greeting' : 'listening', { conversation: 'preparing' });
+    return show(current, current.visual === 'greeting' ? 'greeting' : 'listening', { conversation: 'preparing', activity: null, worked: false });
   // Unknown codes still carry a display-safe Spanish `error` text.
   const recoverable = (e.code && recoverableCodes[e.code]) || (e.state === 'listening' ? e.error : undefined);
   // thinking -> listening without code nor visitor transcript: Able dropped the turn as noise.
@@ -175,7 +197,11 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
   const notice: Notice = recoverable ? { tone: 'warning', text: recoverable }
     : discarded && discards >= discardsForHint ? micHint
     : e.state === 'listening' ? current.notice : null;
-  return show(current, e.state, { conversation: e.state, notice, discards, awaitingTranscript: e.state === 'thinking' });
+  const stillThinking = e.state === 'thinking' && current.conversation === 'thinking';
+  return show(current, e.state, {
+    conversation: e.state, notice, discards, awaitingTranscript: e.state === 'thinking',
+    activity: stillThinking ? current.activity : null, worked: e.state === 'speaking' && e.worked === true,
+  });
 }
 
 export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot {
@@ -188,7 +214,7 @@ export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot
       return s.phase === 'creating' ? { ...s, phase: 'operator', notice: input.notice } : s;
     case 'started':
       return show({ ...s, visual: 'idle' }, 'greeting', {
-        phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing', working: false,
+        phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing', working: false, activity: null, worked: false,
         awaitingTranscript: false, discards: 0, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: null,
       });
     case 'unavailable':

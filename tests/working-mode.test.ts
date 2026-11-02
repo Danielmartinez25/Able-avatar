@@ -1,10 +1,12 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { initialKioskSnapshot, keepsWorking, kioskReducer, micHint } from '../src/integration/able/kioskAdapter.ts';
+import {
+  connectionLostNotice, errorAutoEndMs, initialKioskSnapshot, keepsWorking, kioskReducer, micHint, slowestReplyMs, stuckThinkingMs,
+} from '../src/integration/able/kioskAdapter.ts';
 import {
   advanceBeat, closingAfterMs, closingPhrases, firstBeat, mayPlayClip, workingActions, workingDelayMs, workingPhrases,
 } from '../src/experience/workingMode.ts';
-import { actionDetails, actionNames } from '../src/experience/performance.ts';
+import { actionNames } from '../src/experience/performance.ts';
 import { createWorkingAudio } from '../src/experience/workingAudio.ts';
 
 const ev = (event) => ({ type: 'event', event });
@@ -29,17 +31,15 @@ test('working mode starts only after 5 s of the same thinking', () => {
   assert.equal(kioskReducer(ended, { type: 'working-start', revision: ended.visualRevision }).working, false);
 });
 
-test('animations and phrases change every 3-5 s, never repeat back to back, and close after 60 s', () => {
+test('animations and phrases change every 6-8 s, never repeat back to back, and close after 60 s', () => {
   const random = seeded();
   const beats = [firstBeat(random)];
   while (beats.at(-1).at < 130000) beats.push(advanceBeat(beats.at(-1), random));
   assert.equal(beats[0].at, workingDelayMs);
-  assert.ok(beats.length > 25, 'many changes during a 130 s build');
+  assert.ok(beats.length >= 15 && beats.length <= 22, `${beats.length} changes during a 130 s build`);
   for (let i = 1; i < beats.length; i++) {
     const gap = beats[i].at - beats[i - 1].at;
-    assert.ok(gap >= 3000 && gap <= 5000, `gap ${gap}`);
-    // Each animation stays on screen for the whole beat, before its fade-out.
-    assert.ok(gap < actionDetails[beats[i - 1].action].duration, `${beats[i - 1].action} ${gap}`);
+    assert.ok(gap >= 6000 && gap <= 8000, `gap ${gap}`);
     assert.notEqual(beats[i].action, beats[i - 1].action);
     assert.notEqual(beats[i].text, beats[i - 1].text);
     assert.equal(beats[i].index, i);
@@ -52,7 +52,7 @@ test('animations and phrases change every 3-5 s, never repeat back to back, and 
   // Every animation and every phrase shows up, so it really varies.
   const early = beats.filter(beat => beat.at < closingAfterMs);
   assert.deepEqual(new Set(beats.map(beat => beat.action)), new Set(workingActions));
-  assert.ok(new Set(early.map(beat => beat.text)).size >= 8);
+  assert.ok(new Set(early.map(beat => beat.text)).size >= 5);
   // Even an always-0 or almost-1 random never repeats nor overflows the pools.
   for (const edge of [() => 0, () => 0.9999999]) {
     let beat = firstBeat(edge);
@@ -182,4 +182,29 @@ test('two discarded turns in a row show the microphone hint, a visitor transcrip
   assert.notDeepEqual(normal.notice, micHint);
   // A new visitor starts from zero.
   assert.equal(kioskReducer(twice, { type: 'started' }).discards, 0);
+});
+
+test('a connection that dies while thinking frees the totem soon after the slowest real build', () => {
+  assert.ok(stuckThinkingMs - slowestReplyMs >= 15000, 'a slow but healthy agent build is never cut');
+  assert.ok(stuckThinkingMs <= 150000, 'visitors do not wait for the 240 s reply_timeout');
+  const lost = kioskReducer(working, { type: 'reset', notice: connectionLostNotice });
+  assert.equal(lost.phase, 'operator');
+  assert.equal(lost.working, false);
+  assert.deepEqual(lost.notice, connectionLostNotice);
+  // If the server comes back late, that session's events no longer touch the totem.
+  for (const event of [
+    { event: 'state', state: 'speaking', session: 3 },
+    { event: 'transcript', role: 'bot', text: '¡Listo, te armé tu agente!', session: 3 },
+    { event: 'session_ended', reason: 'ended', session: 3 },
+  ]) assert.equal(kioskReducer(lost, ev(event)).phase, 'operator', JSON.stringify(event));
+});
+
+test('a terminal error keeps its message for the staff when the totem frees itself', () => {
+  assert.ok(errorAutoEndMs >= 5000 && errorAutoEndMs <= 15000);
+  const failed = kioskReducer(thinking, ev({ event: 'state', state: 'error', session: 3, code: 'mic_denied' }));
+  assert.equal(failed.phase, 'error');
+  const freed = kioskReducer(failed, { type: 'reset', notice: failed.notice });
+  assert.equal(freed.phase, 'operator');
+  assert.equal(freed.notice.tone, 'alert');
+  assert.equal(freed.notice.text, failed.notice.text);
 });

@@ -193,3 +193,31 @@ El widget no tiene UI; la experiencia accesible la arma able-avatar con este con
   `/api/kiosk/session` necesita `skills:create`, `agents:create`, `skills:use` y `agents:use` para
   que el agente del tótem pueda crearle agentes al visitante (Administración > Roles). Los permisos
   de cada usuario quedan 60 s en caché.
+
+## Anexo PRD 037 (2026-11-02, respuesta de agenthreex; contrato sigue en versión 1)
+
+- `{ event: "activity", activity, session }`, solo durante `thinking` y solo cuando cambia:
+  - `searching`: procesa la consulta y prepara el contexto.
+  - `thinking`: consulta al modelo.
+  - `working`: crea la skill, o crea o edita el agente.
+  - `finishing`: arma la respuesta.
+
+  Un valor desconocido se trata como `thinking`. Mientras crea un agente alterna `thinking` y
+  `working` varias veces por segundo: sostener cada animación ~2 s y quedarse con la última.
+- `state: speaking` puede traer `worked: true`: en ese turno el agente creó o editó algo.
+- Terminales nuevos: `connection_lost`, que llega si el socket no reconecta en 15 s (el widget
+  suelta el micrófono y el audio), y `credits_exhausted`, que llega si se agotan los créditos del
+  visitante o del workspace. No hay `reason` nueva en `session_ended`: el tótem llama `endSession()`.
+- `reply_timeout` pasa a 120 s. Un 5xx o un corte de red de `/api/answer` cierra el turno al
+  instante: el error se lee como respuesta, o llega `turn_failed` si la voz también falla.
+- `endSession()` no espera al servidor: corta el micrófono y el audio, descarta el token y emite
+  `audio_level 0` → `session_ended` → `state idle` aunque `/api/kiosk/session/end` devuelva 502.
+- Una caída del servidor no recarga el iframe ni emite `ready`: el socket reconecta solo. El timer
+  de inactividad corre en el iframe, pero se frena en `thinking` y `speaking`.
+- Lista completa de códigos:
+  - Terminales: `mic_denied`, `mic_not_found`, `mic_error`, `voice_unavailable`, `connection_lost`,
+    `credits_exhausted`.
+  - Recuperables: `playback_blocked`, `reply_timeout`, `turn_failed`.
+- Un `synthesize` 403 (el dueño del agente se quedó sin saldo de voz) llega como `turn_failed`; el
+  texto ya salió como `transcript`. Los 403 de permisos en las tools no tienen código: los dice el
+  agente.

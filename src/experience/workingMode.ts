@@ -1,18 +1,15 @@
 /**
  * "Working" mode: covers the long `thinking` while Able builds the visitor's agent (75-130 s).
- * The widget sends nothing during that wait, so the avatar fills it locally: every 3-5 s it
- * switches to another work animation, each one with its own phrase.
+ * Every 6-8 s a new phrase appears. When Able reports its `activity`, the phrases follow that
+ * animation; with an older widget that sends none, the avatar also rotates the animation itself.
  */
-import { actionDetails } from './performance.ts';
 
 /** A `thinking` shorter than this never shows working mode. */
 export const workingDelayMs = 5000;
 /** Measured from the start of `thinking`; after this only closing phrases are shown. */
 export const closingAfterMs = 60000;
-const minBeatMs = 3000;
-const maxBeatMs = 5000;
-/** Keeps a beat inside its animation, so it never fades out before the next one starts. */
-const fadeMarginMs = 400;
+const minBeatMs = 6000;
+const maxBeatMs = 8000;
 
 export const workingActions = ['work', 'search', 'organize', 'idea'] as const;
 export type WorkingAction = (typeof workingActions)[number];
@@ -43,22 +40,26 @@ export type WorkingBeat = { action: WorkingAction; text: string; at: number; ind
 const pick = <T,>(items: readonly T[], random: () => number) =>
   items[Math.min(items.length - 1, Math.floor(random() * items.length))];
 
-/** Never the same animation nor the same phrase twice in a row. */
-function beatAt(previous: WorkingBeat | null, at: number, random: () => number): WorkingBeat {
-  const action = pick(workingActions.filter(name => name !== previous?.action), random);
+/**
+ * Never the same phrase twice in a row. Without `forced` (the animation of Able's current
+ * activity) the animation rotates too, never repeating back to back.
+ */
+export function nextBeat(previous: WorkingBeat | null, at: number, forced?: WorkingAction, random = Math.random): WorkingBeat {
+  const action = forced ?? pick(workingActions.filter(name => name !== previous?.action), random);
   const pool = at >= closingAfterMs ? closingPhrases : workingPhrases[action];
   const text = pick(pool.filter(phrase => phrase !== previous?.text), random);
   return { action, text, at, index: previous ? previous.index + 1 : 0 };
 }
 
-export const beatIntervalMs = (action: WorkingAction, random = Math.random) =>
-  Math.min(minBeatMs + random() * (maxBeatMs - minBeatMs), actionDetails[action].duration - fadeMarginMs);
+/** A short animation may end before the beat does; the avatar then rests on the working pose. */
+export const beatIntervalMs = (_action: WorkingAction, random = Math.random) =>
+  minBeatMs + random() * (maxBeatMs - minBeatMs);
 
 /** First beat, shown as soon as working mode starts. */
-export const firstBeat = (random = Math.random) => beatAt(null, workingDelayMs, random);
+export const firstBeat = (random = Math.random) => nextBeat(null, workingDelayMs, undefined, random);
 
 export const advanceBeat = (current: WorkingBeat, random = Math.random) =>
-  beatAt(current, current.at + beatIntervalMs(current.action, random), random);
+  nextBeat(current, current.at + beatIntervalMs(current.action, random), undefined, random);
 
 /**
  * A clip may only sound while working mode is on and the widget is still thinking: in

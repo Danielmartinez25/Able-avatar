@@ -2,15 +2,20 @@
  * Able widget kiosk-mode contract, version 1.
  * Source of truth: agenthreex docs/prds/036-kiosco-avatar/WIDGET_KIOSK_CONTRACT.md
  * (copied in docs/24-widget-kiosk-contract.md). Only fields listed there are read.
+ * PRD 037 (2026-11-02) added `activity`, `worked` and two terminal codes, still as version 1.
  */
 export const conversationStates = ['idle', 'listening', 'thinking', 'speaking', 'error'] as const;
 export type ConversationState = (typeof conversationStates)[number];
 export const endReasons = ['ended', 'idle', 'unauthorized', 'replaced'] as const;
 export type EndReason = (typeof endReasons)[number];
+/** What Able is doing during `thinking`; only sent when it changes. */
+export const kioskActivities = ['searching', 'thinking', 'working', 'finishing'] as const;
+export type KioskActivity = (typeof kioskActivities)[number];
 
 export type KioskEvent =
   | { event: 'ready' }
-  | { event: 'state'; state: ConversationState; session?: number; error?: string; code?: string }
+  | { event: 'state'; state: ConversationState; session?: number; error?: string; code?: string; worked?: boolean }
+  | { event: 'activity'; activity: KioskActivity; session?: number }
   | { event: 'audio_level'; level: number; session: number; estimated?: boolean }
   | { event: 'transcript'; role: 'user' | 'bot'; text: string; session: number }
   | { event: 'session_ended'; reason: EndReason; session?: number };
@@ -41,6 +46,16 @@ export function parseKioskEvent(raw: unknown): KioskEvent | null {
         ...(e.session === undefined ? {} : { session: e.session as number }),
         ...(typeof e.error === 'string' ? { error: e.error } : {}),
         ...(typeof e.code === 'string' ? { code: e.code } : {}),
+        // The agent created or edited something in this turn.
+        ...(e.state === 'speaking' && e.worked === true ? { worked: true } : {}),
+      };
+    case 'activity':
+      if (typeof e.activity !== 'string' || !optionalSession(e.session)) return null;
+      // The contract says to treat an unknown activity as "thinking".
+      return {
+        event: 'activity',
+        activity: kioskActivities.includes(e.activity as KioskActivity) ? e.activity as KioskActivity : 'thinking',
+        ...(e.session === undefined ? {} : { session: e.session as number }),
       };
     case 'audio_level':
       if (typeof e.level !== 'number' || !Number.isFinite(e.level) || !isSession(e.session)) return null;
@@ -71,5 +86,7 @@ export const terminalCodes: Record<string, string> = {
   mic_not_found: 'No encuentro el micrófono. Llamá al staff.',
   mic_error: 'No encuentro el micrófono. Llamá al staff.',
   voice_unavailable: 'La voz no está disponible. Revisar la configuración del agente.',
+  connection_lost: 'Se perdió la conexión con Able. Llamá al staff.',
+  credits_exhausted: 'Able se quedó sin créditos. Avisá al staff.',
 };
 export const genericTerminalMessage = 'Algo falló con la voz de Able. Llamá al staff.';

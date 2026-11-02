@@ -143,7 +143,7 @@ responde corto, y cuando el visitante dice qué agente quiere lo crea en ese mis
 widget en `state: thinking` entre 75 y 130 s, sin eventos de avance ni audio.
 
 - **Modo trabajando.** Si `thinking` dura 5 s (`workingDelayMs`), el adaptador pasa a `working: true`
-  y al estado visual `working`. Cada 3 a 5 s cambia de animación de trabajo (laptop, lupa, lista de
+  y al estado visual `working`. Cada 6 a 8 s cambia de animación de trabajo (laptop, lupa, lista de
   tareas, lamparita) y de frase. Cada animación tiene sus frases y nunca se repiten seguidas. Desde
   los 60 s de `thinking` solo hay frases de cierre. Las frases se muestran en un globo
   `aria-live="polite"` (`src/experience/workingMode.ts`). Es un relleno local: el contrato v1 no
@@ -231,3 +231,39 @@ En el tótem:
     (los permisos quedan 60 s en caché): sin 403, con el modo trabajando y la confirmación;
     (3) si se cambia el iframe, repetir el paso 1 y fijarse que la pausa se sienta pareja.
 
+
+## Prueba del 2026-11-02 y cortes automáticos
+
+- **Voz con el iframe oculto (MR !633):** anduvo. El primer turno tomó la voz y respondió.
+- **Caída de able-test:** durante las tools de creación se cerró el socket y todo dio 502, incluido
+  `session/end`. El widget no emitió ningún evento, así que el tótem quedó en "Armando tu agente…".
+  Se pidió a agenthreex un evento de conexión perdida y otras mejoras: ver
+  `docs/25-pedido-manejo-errores.md`.
+- **Tope de `thinking`** (`stuckThinkingMs`, 150 s: la creación más lenta, 130 s, + 20 s; la
+  gente no espera los 240 s del `reply_timeout`): si se supera, `useKiosk` llama `endSession()` y vuelve a la pantalla del mail con "Se cortó la conexión
+  con Able".
+- **Error terminal:** se muestra `errorAutoEndMs` (8 s) y después el tótem se libera solo. El staff
+  conserva el mensaje.
+
+## Animaciones por actividad y errores de Able (PRD 037, 2026-11-02)
+
+- **Actividad:** `kioskAdapter` guarda la última `activity` del `thinking` actual. `useKiosk` la
+  muestra con un mínimo de 5 s por animación; una vez en `working`, un `thinking` del mismo turno no saca la laptop (`activityMotion.ts`):
+  - `searching` → lupa, con el texto "Buscando…";
+  - `thinking` → lamparita, con "Pensando…";
+  - `working` → pose de trabajo con laptop, con "Armando tu agente…";
+  - `finishing` → lista, con "Ya casi…".
+
+  En modo trabajando las frases del globo siguen a la animación en pantalla. Si un `thinking` no
+  trae ninguna `activity` (widget viejo), se usa la rotación local de antes.
+- **`worked: true`** en `speaking`: el avatar hace "¡Tarán!" mientras empieza a hablar. La boca
+  ahora sigue el `audio_level` aunque haya una animación en curso, salvo durante la siesta.
+- **Errores:** `connection_lost` y `credits_exhausted` son terminales: se muestran 8 s y el tótem se
+  libera solo. `reply_timeout` pasa a 120 s, así que el tope local de 150 s queda como red de
+  seguridad.
+- **Caída del 2026-11-02:** fue un deploy de able-test (merge a develop a las 14:56 UTC; el
+  pipeline reinicia unos 10 minutos después). **Regla para el stand: durante el evento no se
+  despliega sobre el ambiente que usa el tótem.** Hay que acordarlo con agenthreex, o usar un
+  ambiente aparte.
+- Simulador: "Thinking largo" emite la secuencia de `activity` y responde con `worked`. Se suman
+  los botones "Conexión perdida" y "Sin créditos", y "Timeout" vuelve a 120 s.

@@ -3,6 +3,7 @@ import { AvatarScene } from '../avatar/AvatarScene';
 import { SpeechLevelContext } from '../avatar/speechContext';
 import { actionDetails, attentionActions } from '../experience/performance';
 import type { ActionName, ActionPlayback } from '../experience/performance';
+import { activityMotion } from '../experience/activityMotion';
 import { useKiosk } from '../integration/able/useKiosk';
 import type { Conversation } from '../integration/able/kioskAdapter';
 
@@ -32,6 +33,7 @@ export function TotemApp(){
   const [fullscreen,setFullscreen]=useState(false);
   const [fullscreenNotice,setFullscreenNotice]=useState('');
   const nextScene=useRef(0);
+  const scene=useRef({key:'',revision:-1});
   const emailInput=useRef<HTMLInputElement>(null),endButton=useRef<HTMLButtonElement>(null),corner=useRef<HTMLButtonElement>(null);
   const attracting=idlePhases.includes(snapshot.phase);
   const inSession=snapshot.phase==='conversation' || snapshot.phase==='error';
@@ -67,6 +69,10 @@ export function TotemApp(){
     schedule();document.addEventListener('visibilitychange',schedule);
     return ()=>{clearTimeout(timer);document.removeEventListener('visibilitychange',schedule);};
   },[action.name,reducedMotion,play,attracting]);
+  // The agent created or edited something in this turn: ¡Tarán! as it starts talking.
+  useEffect(()=>{
+    if(snapshot.visual==='speaking' && snapshot.worked)play('taDa');
+  },[snapshot.visual,snapshot.visualRevision,snapshot.worked,play]);
   // The visitor's mail lives only in this input while the staff types it.
   useEffect(()=>{
     if(snapshot.phase==='conversation' || snapshot.phase==='farewell')setEmail('');
@@ -99,21 +105,29 @@ export function TotemApp(){
   const closePanel=()=>{setPanelOpen(false);corner.current?.focus({preventScroll:true});};
   const polite=snapshot.notice && snapshot.notice.tone!=='alert' ? snapshot.notice.text : '';
   const assertive=snapshot.notice?.tone==='alert' ? snapshot.notice.text : '';
-  // Working mode rotates its own animations; negative revisions never clash with `action`'s.
-  const beat=kiosk.workingBeat;
-  const sceneAction:ActionPlayback=beat ? {name:beat.action,revision:-2-beat.index} : action;
-  const status=snapshot.working ? workingStatus : snapshot.conversation ? talkStatus[snapshot.conversation] : null;
+  // Able's activity drives the animation; without it, working mode rotates its own.
+  const {activity,workingBeat:beat}=kiosk;
+  const activityName=activity && activity!=='working' ? activityMotion[activity].action : null;
+  const sceneName:ActionName|null=activity ? activityName : beat ? beat.action : action.name;
+  const sceneKey=activity ? 'activity:'+activity : beat ? 'beat:'+beat.index : 'action:'+action.revision;
+  // Negative revisions never clash with `action`'s own.
+  if(sceneKey!==scene.current.key)scene.current={key:sceneKey,revision:scene.current.revision-1};
+  const sceneAction:ActionPlayback=activity || beat ? {name:sceneName,revision:scene.current.revision} : action;
+  const sceneState=activity==='working' ? 'working' : snapshot.visual;
+  const status=activity ? {icon:'⚙',text:activityMotion[activity].text} : snapshot.working ? workingStatus : snapshot.conversation ? talkStatus[snapshot.conversation] : null;
   return <main className="totem" data-phase={snapshot.phase}>
     <div className="avatar-view">
       <SpeechLevelContext value={kiosk.speech}>
-        <AvatarScene state={snapshot.visual} revision={snapshot.visualRevision} expression={snapshot.expression} action={sceneAction} reducedMotion={reducedMotion} onReact={greet}/>
+        <AvatarScene state={sceneState} revision={snapshot.visualRevision} expression={snapshot.expression} action={sceneAction} reducedMotion={reducedMotion} onReact={greet}/>
       </SpeechLevelContext>
     </div>
     {kiosk.mode==='simulated' && <span className="sim-badge">SIMULACIÓN</span>}
     {kiosk.mode==='simulated' && snapshot.phase==='conversation' && <div className="sim-tools" role="group" aria-label="Escenarios simulados">
       <button type="button" onClick={()=>kiosk.simulator?.think(90000,'reply')}>Thinking largo · 90 s</button>
-      <button type="button" onClick={()=>kiosk.simulator?.think(240000,'timeout')}>Timeout · 240 s</button>
+      <button type="button" onClick={()=>kiosk.simulator?.think(120000,'timeout')}>Timeout · 120 s</button>
       <button type="button" onClick={()=>kiosk.simulator?.think(1500,'noise')}>Ruido descartado</button>
+      <button type="button" onClick={()=>kiosk.simulator?.setState('error','connection_lost')}>Conexión perdida</button>
+      <button type="button" onClick={()=>kiosk.simulator?.setState('error','credits_exhausted')}>Sin créditos</button>
     </div>}
     <button ref={corner} className="staff-corner" aria-label="Abrir panel del staff (Ctrl+M)" aria-expanded={panelOpen} aria-controls="staff-panel" onClick={()=>setPanelOpen(open=>!open)}/>
 

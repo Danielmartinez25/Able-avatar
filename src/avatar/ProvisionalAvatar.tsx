@@ -16,7 +16,7 @@ import { ExpressionAccents } from "./ExpressionAccents";
 import { Magnifier, PerformanceProps, PropReveal } from "./PerformanceProps";
 import { resolveAccent } from "../experience/visualAccents";
 import { DocumentsProp } from "./DocumentsProp";
-import { isFetch } from "./storyMotion";
+import { isFetch, isNap } from "./storyMotion";
 import { AttentionEffects } from "./AttentionEffects";
 import { mouthFromLevel, smoothSpeechLevel } from "../experience/speechLevel";
 import { SpeechLevelContext } from "./speechContext";
@@ -185,7 +185,7 @@ export function ProvisionalAvatar({
       0.12 + pose.eyeOffset + pointer.y * 0.018 * follow,
     );
     if (speech) speech.smoothed = smoothSpeechLevel(speech.smoothed, speech.live ? speech.target : 0, delta);
-    if (speech?.live && state === "speaking" && !action.name)
+    if (speech?.live && state === "speaking" && !isNap(action.name))
       mouth.current.scale.y = mouthFromLevel(speech.smoothed, clock.elapsedTime, speech.estimated);
     else mouth.current.scale.y = lerp(mouth.current.scale.y, pose.mouthHeight);
     sparks.current.scale.setScalar(pose.sparkles);
