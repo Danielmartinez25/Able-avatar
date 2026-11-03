@@ -3,6 +3,7 @@ import { oneShotDuration } from '../../experience/visualState';
 import { createSpeechLevel } from '../../experience/speechLevel';
 import { createWorkingAudio } from '../../experience/workingAudio';
 import { activityMotion, activityWaitMs, settleActivity } from '../../experience/activityMotion';
+import { goodbyeEndMs } from '../../experience/goodbye';
 import { beatIntervalMs, mayPlayClip, nextBeat, workingDelayMs } from '../../experience/workingMode';
 import type { WorkingBeat } from '../../experience/workingMode';
 import {
@@ -192,6 +193,14 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
       if ((s.phase === 'conversation' || s.phase === 'error') && s.session === session) dispatch({ type: 'reset' });
     }, endFallbackMs);
   }, [workingAudio]);
+
+  // The visitor said goodbye: once Able finished answering it, end like the "Terminar" button.
+  const saidGoodbye = snapshot.phase === 'conversation' && snapshot.goodbye === 'replied' && snapshot.conversation === 'listening';
+  useEffect(() => {
+    if (!saidGoodbye) return;
+    const timer = setTimeout(end, goodbyeEndMs);
+    return () => clearTimeout(timer);
+  }, [saidGoodbye, end]);
 
   return {
     snapshot, speech, mode, simulator, start, end, retry: () => window.location.reload(),

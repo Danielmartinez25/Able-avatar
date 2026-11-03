@@ -2,6 +2,7 @@ import type { SpeechLevel } from '../../experience/speechLevel.ts';
 import type { VisualState } from '../../experience/visualState.ts';
 import type { EndReason, KioskActivity, KioskEvent } from './kioskContract.ts';
 import { genericTerminalMessage, recoverableCodes, terminalCodes } from './kioskContract.ts';
+import { isGoodbye } from '../../experience/goodbye.ts';
 
 export type KioskPhase = 'loading' | 'unavailable' | 'operator' | 'creating' | 'conversation' | 'error' | 'farewell';
 export type Conversation = 'preparing' | 'listening' | 'thinking' | 'speaking';
@@ -24,6 +25,10 @@ export interface KioskSnapshot {
   activity: KioskActivity | null;
   /** The current `speaking` comes from a turn where the agent created or edited something. */
   worked: boolean;
+  /** Some turn of this session had `worked`: the farewell then mentions the agents mail. */
+  madeAgent: boolean;
+  /** The visitor said goodbye (`heard`) and Able already started its answer (`replied`). */
+  goodbye: 'heard' | 'replied' | null;
   /** A `thinking` is waiting for the visitor's `transcript`; without one Able discarded the turn as noise. */
   awaitingTranscript: boolean;
   /** Noise turns in a row since the last visitor `transcript`; two of them show `micHint`. */
@@ -58,6 +63,8 @@ export const initialKioskSnapshot: KioskSnapshot = {
   working: false,
   activity: null,
   worked: false,
+  madeAgent: false,
+  goodbye: null,
   awaitingTranscript: false,
   discards: 0,
   visual: 'idle',
@@ -98,6 +105,8 @@ function backToOperator(s: KioskSnapshot, notice: Notice): KioskSnapshot {
     working: false,
     activity: null,
     worked: false,
+    madeAgent: false,
+    goodbye: null,
     awaitingTranscript: false,
     discards: 0,
     expression: 'auto',
@@ -166,7 +175,7 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
   if (e.event === 'activity')
     return current.phase === 'conversation' && current.conversation === 'thinking' ? { ...current, activity: e.activity } : current;
   if (e.event === 'transcript') {
-    const heard = e.role === 'user' ? { awaitingTranscript: false, discards: 0 } : {};
+    const heard = e.role === 'user' ? { awaitingTranscript: false, discards: 0, goodbye: isGoodbye(e.text) ? 'heard' as const : null } : {};
     return { ...current, ...heard, transcript: { ...current.transcript, [e.role]: e.text } };
   }
   if (e.event === 'session_ended') {
@@ -177,7 +186,7 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
       return backToOperator({ ...current, endedSession: ended }, { tone: 'warning', text: 'La sesión venció. Ingresá el mail de nuevo.' });
     return show(current, 'farewell', {
       phase: 'farewell', session: null, awaitingSession: false, endedSession: ended,
-      conversation: null, activity: null, worked: false, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: e.reason,
+      conversation: null, activity: null, worked: false, goodbye: null, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: e.reason,
     });
   }
   if (e.state === 'error')
@@ -198,9 +207,11 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
     : discarded && discards >= discardsForHint ? micHint
     : e.state === 'listening' ? current.notice : null;
   const stillThinking = e.state === 'thinking' && current.conversation === 'thinking';
+  const worked = e.state === 'speaking' && e.worked === true;
   return show(current, e.state, {
     conversation: e.state, notice, discards, awaitingTranscript: e.state === 'thinking',
-    activity: stillThinking ? current.activity : null, worked: e.state === 'speaking' && e.worked === true,
+    activity: stillThinking ? current.activity : null, worked, madeAgent: current.madeAgent || worked,
+    goodbye: current.goodbye === 'heard' && e.state === 'speaking' ? 'replied' : current.goodbye,
   });
 }
 
@@ -215,6 +226,7 @@ export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot
     case 'started':
       return show({ ...s, visual: 'idle' }, 'greeting', {
         phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing', working: false, activity: null, worked: false,
+        madeAgent: false, goodbye: null,
         awaitingTranscript: false, discards: 0, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: null,
       });
     case 'unavailable':

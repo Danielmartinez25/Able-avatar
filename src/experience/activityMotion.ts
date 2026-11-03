@@ -6,10 +6,10 @@ import type { WorkingAction } from './workingMode.ts';
  * `working` uses the persistent working pose (laptop, typing) instead of a one-shot action.
  */
 export const activityMotion: Record<KioskActivity, { action: WorkingAction; text: string }> = {
-  searching: { action: 'search', text: 'Buscando…' },
+  searching: { action: 'search', text: 'Entendiendo tu pedido…' },
   thinking: { action: 'idea', text: 'Pensando…' },
-  working: { action: 'work', text: 'Armando tu agente…' },
-  finishing: { action: 'organize', text: 'Ya casi…' },
+  working: { action: 'work', text: 'Creando tu agente…' },
+  finishing: { action: 'organize', text: 'Preparando la respuesta…' },
 };
 
 /**

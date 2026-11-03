@@ -249,10 +249,14 @@ En el tótem:
 
 - **Actividad:** `kioskAdapter` guarda la última `activity` del `thinking` actual. `useKiosk` la
   muestra con un mínimo de 5 s por animación; una vez en `working`, un `thinking` del mismo turno no saca la laptop (`activityMotion.ts`):
-  - `searching` → lupa, con el texto "Buscando…";
+  - `searching` → lupa, con el texto "Entendiendo tu pedido…";
   - `thinking` → lamparita, con "Pensando…";
-  - `working` → pose de trabajo con laptop, con "Armando tu agente…";
-  - `finishing` → lista, con "Ya casi…".
+  - `working` → pose de trabajo con laptop, con "Creando tu agente…";
+  - `finishing` → lista, con "Preparando la respuesta…".
+
+  Los textos y las frases del globo cuentan, desde el lado del visitante, qué hace Able en ese
+  paso. Por ejemplo, con la lupa sale "Leyendo bien lo que me contaste…" y con la laptop, "Creando
+  tu agente en Able…".
 
   En modo trabajando las frases del globo siguen a la animación en pantalla. Si un `thinking` no
   trae ninguna `activity` (widget viejo), se usa la rotación local de antes.
@@ -267,3 +271,21 @@ En el tótem:
   ambiente aparte.
 - Simulador: "Thinking largo" emite la secuencia de `activity` y responde con `worked`. Se suman
   los botones "Conexión perdida" y "Sin créditos", y "Timeout" vuelve a 120 s.
+
+## Despedida por voz y texto de los mails (2026-11-02)
+
+- **"Chau" corta la charla.** Si todo lo que dijo el visitante es una despedida ("chau", "bueno,
+  gracias, nos vemos", "eso es todo", "quiero terminar la charla"), el tótem espera a que Able
+  responda. Cuando Able vuelve a `listening`, a los 1,2 s llama `endSession()`, igual que el botón
+  "Terminar", así que también salen los mails. Una despedida dentro de un pedido ("creame un agente
+  que diga chau") no corta. La detección es local, sobre el `transcript` del visitante, y no se
+  guarda nada (`src/experience/goodbye.ts`). Si el visitante sigue hablando antes del corte, no se
+  corta.
+- En la charla, la nota de abajo suma: Para terminar, decí "chau".
+- **Despedida en pantalla:**
+  - si en la sesión hubo `worked: true`: "te mandamos uno con tus agentes y otro para elegir tu
+    contraseña y entrar a tu cuenta";
+  - si no: "te mandamos un link para elegir tu contraseña… Si creaste un agente, te llega en otro
+    mail". Esto cubre un widget sin PRD 037.
+- La nota del staff menciona los dos mails.
+- Simulador: botón "Decir chau".

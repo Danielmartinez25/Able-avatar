@@ -14,18 +14,21 @@ const maxBeatMs = 8000;
 export const workingActions = ['work', 'search', 'organize', 'idea'] as const;
 export type WorkingAction = (typeof workingActions)[number];
 
-/** Phrases that go with each animation: laptop, magnifier, checklist and light bulb. */
+/**
+ * Phrases that go with each animation, told from the visitor's side: what Able is doing for them
+ * in that step. Magnifier = understanding the request, bulb = thinking, laptop = creating the
+ * agent, checklist = preparing the answer.
+ */
 export const workingPhrases: Record<WorkingAction, readonly string[]> = {
-  work: ['¡Dale! Lo estoy armando…', 'Escribiendo sus instrucciones…', 'Tecleando a toda velocidad…'],
-  search: ['Le estoy enseñando a hacer su trabajo.', 'Buscando la mejor forma de ayudarte…', 'Investigando un poquito…'],
-  organize: ['Estoy eligiendo cómo va a responder.', 'Ordenando los pasos…', 'Chequeando que no falte nada…'],
-  idea: ['Le estoy dando personalidad a tu agente.', 'Le pongo un nombre lindo…', '¡Se me ocurrió algo!'],
+  search: ['Leyendo bien lo que me contaste…', 'Juntando lo que necesito…', 'Revisando qué tiene que hacer tu agente…'],
+  idea: ['Pensando cómo ayudarte mejor…', 'Eligiendo la mejor idea…', '¡Se me ocurrió algo!'],
+  work: ['Creando tu agente en Able…', 'Escribiendo cómo va a trabajar…', 'Dándole personalidad…', 'Poniéndole un nombre lindo…'],
+  organize: ['Ordenando todo para contártelo…', 'Chequeando que no falte nada…', 'Revisando los últimos detalles…'],
 };
 export const closingPhrases = [
   'Ya casi está, un toque más.',
-  '¡Estoy dando los últimos detalles!',
-  'Últimos retoques…',
   'Falta poquito…',
+  'Dando los últimos retoques…',
 ] as const;
 
 /**

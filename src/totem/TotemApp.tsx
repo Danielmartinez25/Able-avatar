@@ -16,9 +16,13 @@ const talkStatus: Record<Conversation, { icon: string; text: string }> = {
   speaking: { icon: '♪', text: 'Able está hablando' },
 };
 const idlePhases = ['loading', 'unavailable', 'operator'];
-const workingStatus = { icon: '⚙', text: 'Armando tu agente…' };
-const aiNote = 'La charla se procesa con IA y no se guarda en el tótem.';
-const beforeStartNote = 'La charla se procesa con IA. Al terminar te llegan tus agentes y el acceso a tu cuenta por mail.';
+const workingStatus = { icon: '⚙', text: 'Creando tu agente…' };
+const aiNote = 'La charla se procesa con IA y no se guarda en el tótem. Para terminar, decí "chau".';
+const beforeStartNote = 'La charla se procesa con IA. Al terminar te llegan dos mails: uno con tus agentes y otro para entrar a tu cuenta.';
+/** Able sends the agents mail only when some agent was created; `madeAgent` comes from `worked` (PRD 037). */
+const farewellMail = (madeAgent: boolean) => madeAgent
+  ? 'Revisá tu mail: te mandamos uno con tus agentes y otro para elegir tu contraseña y entrar a tu cuenta.'
+  : 'Revisá tu mail: te mandamos un link para elegir tu contraseña y entrar a tu cuenta. Si creaste un agente, te llega en otro mail.';
 const startHint = 'Contale al avatar qué agente te gustaría tener, por ejemplo uno que te dé recetas o uno que responda a tus clientes.';
 const isStaffShortcut = (event: KeyboardEvent) => event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'm';
 
@@ -128,6 +132,7 @@ export function TotemApp(){
       <button type="button" onClick={()=>kiosk.simulator?.think(1500,'noise')}>Ruido descartado</button>
       <button type="button" onClick={()=>kiosk.simulator?.setState('error','connection_lost')}>Conexión perdida</button>
       <button type="button" onClick={()=>kiosk.simulator?.setState('error','credits_exhausted')}>Sin créditos</button>
+      <button type="button" onClick={()=>kiosk.simulator?.say('Bueno, gracias, chau','¡Chau! Fue un gusto, que lo disfrutes.')}>Decir chau</button>
     </div>}
     <button ref={corner} className="staff-corner" aria-label="Abrir panel del staff (Ctrl+M)" aria-expanded={panelOpen} aria-controls="staff-panel" onClick={()=>setPanelOpen(open=>!open)}/>
 
@@ -151,8 +156,8 @@ export function TotemApp(){
     </section>}
 
     {snapshot.phase==='farewell' && <section className="farewell" role="status">
-      <strong>¡Listo!</strong>
-      <span>{snapshot.endReason==='idle' ? 'Me quedé esperando, así que cerramos la charla. ' : ''}Revisá tu mail: te mandamos tus agentes y un link para entrar a tu cuenta.</span>
+      <strong>{snapshot.endReason==='idle' ? '¡Listo!' : '¡Gracias por pasar!'}</strong>
+      <span>{snapshot.endReason==='idle' ? 'Me quedé esperando, así que cerramos la charla. ' : ''}{farewellMail(snapshot.madeAgent)}</span>
     </section>}
 
     <div className="notices">

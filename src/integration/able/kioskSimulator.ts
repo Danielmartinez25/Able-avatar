@@ -18,6 +18,8 @@ export interface SimulatedKioskWidget extends KioskWidget {
    * with `reply_timeout`. Any other injected event cancels the pending outcome.
    */
   think(ms: number, outcome: 'reply' | 'timeout' | 'noise'): void;
+  /** The visitor says `text`; Able thinks briefly and answers `reply`. */
+  say(text: string, reply: string): void;
   finish(reason: EndReason): void;
   /** Simulates an iframe reload: `ready` arrives while a session is running. */
   reload(): void;
@@ -140,6 +142,13 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
         else if (outcome === 'noise') api.setState('listening');
         else api.speak('¡Listo, te armé tu agente de comidas, que te da recetas con lo que tenés en la heladera! Cuando terminemos te llega un mail con el link.', 6500, true);
       });
+    },
+    say(text, reply) {
+      if (!active) return;
+      api.setState('thinking');
+      const token = thinkToken;
+      send({ event: 'transcript', role: 'user', text, session });
+      later(1200, () => { if (token === thinkToken) api.speak(reply, 3000); });
     },
     finish(reason) {
       if (!active) return;
