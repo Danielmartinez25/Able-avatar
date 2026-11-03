@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AvatarScene } from '../avatar/AvatarScene';
 import { LayeredOffice } from './LayeredOffice';
+import { TeamOffice } from './TeamOffice';
 import { SpeechLevelContext } from '../avatar/speechContext';
 import { actionDetails, attentionActions } from '../experience/performance';
 import type { ActionName, ActionPlayback } from '../experience/performance';
@@ -24,7 +25,7 @@ const startHint = 'Contale al avatar qué agente te gustaría tener, por ejemplo
 const isStaffShortcut = (event: KeyboardEvent) => event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'm';
 
 /** Able alone on screen. The staff panel is hidden behind a corner button or Ctrl+M. */
-export function TotemApp(){
+export function TotemApp({office='original'}:{office?:'original'|'team'}){
   const kiosk=useKiosk({simulate});
   const {snapshot}=kiosk;
   const [email,setEmail]=useState('');
@@ -117,7 +118,7 @@ export function TotemApp(){
   const sceneState=activity==='working' ? 'working' : snapshot.visual;
   const status=activity ? {icon:'⚙',text:activityMotion[activity].text} : snapshot.working ? workingStatus : snapshot.conversation ? talkStatus[snapshot.conversation] : null;
   return <main className="totem" data-phase={snapshot.phase}>
-    <LayeredOffice/>
+    {office==='team' ? <TeamOffice/> : <LayeredOffice/>}
     <div className="avatar-view">
       <SpeechLevelContext value={kiosk.speech}>
         <AvatarScene state={sceneState} revision={snapshot.visualRevision} expression={snapshot.expression} action={sceneAction} reducedMotion={reducedMotion} onReact={greet}/>

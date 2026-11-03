@@ -1,5 +1,5 @@
 /** Illustrative faces on a fixed office plate; no widget/session dependencies. */
-function WorkerFace({x,y,scale=1,angle=0,name}:{x:number;y:number;scale?:number;angle?:number;name:string}){
+export function WorkerFace({x,y,scale=1,angle=0,name}:{x:number;y:number;scale?:number;angle?:number;name:string}){
   return <g transform={`translate(${x} ${y}) rotate(${angle}) scale(${scale})`}>
     <g className={`office-face face-${name}`}>
       <g className="face-gaze">

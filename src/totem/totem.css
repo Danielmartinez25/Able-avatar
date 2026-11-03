@@ -60,3 +60,10 @@
 @media(prefers-reduced-motion:reduce){.office-face .face-eyes,.office-face .face-gaze,.office-face .face-smile{animation:none}}
 .totem .avatar-view{left:50%;right:auto;top:40%;bottom:8%;width:min(44vh,70vw);transform:translateX(-50%)}
 .totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{top:38%;bottom:min(32vh,250px)}
+
+.team-fourth .face-eyes{animation-duration:6.3s;animation-delay:-3.6s}
+.team-fourth .face-gaze{animation-duration:15s;animation-delay:-7s}
+
+/* Smaller gaze travel keeps the team faces centered inside their angled screens. */
+.team-composite .face-gaze{animation-name:team-face-look}
+@keyframes team-face-look{0%,22%,100%{transform:translate(0,0)}35%,58%{transform:translate(-1px,1px)}72%,86%{transform:translate(1px,-.5px)}}
