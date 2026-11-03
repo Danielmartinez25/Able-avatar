@@ -38,6 +38,8 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
   const [workingAudio] = useState(createWorkingAudio);
   const [workingBeat, setWorkingBeat] = useState<WorkingBeat | null>(null);
   const [simulator, setSimulator] = useState<SimulatedKioskWidget | null>(null);
+  /** The loaded widget script has `endTurn()` (PRD 038); older ones do not. */
+  const [canEndTurn, setCanEndTurn] = useState(false);
   const widget = useRef<KioskWidget | null>(null);
   const latest = useRef(snapshot);
   useLayoutEffect(() => { latest.current = snapshot; }, [snapshot]);
@@ -63,11 +65,12 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
       const unsubscribe = fake.onEvent(handle);
       widget.current = fake;
       setSimulator(fake);
+      setCanEndTurn(true);
       cleanup = () => { unsubscribe(); fake.dispose(); };
     } else if (mode === 'real') {
       const unsubscribe = onKioskEvent(handle);
       ensureKioskWidget(config as KioskConfig).then(
-        loaded => { if (!disposed) widget.current = loaded; },
+        loaded => { if (!disposed) { widget.current = loaded; setCanEndTurn(typeof loaded.endTurn === 'function'); } },
         reason => { if (!disposed) dispatch({ type: 'unavailable', text: 'Kiosco no disponible. ' + (reason instanceof Error ? reason.message : '') }); },
       );
       cleanup = unsubscribe;
@@ -194,6 +197,12 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
     }, endFallbackMs);
   }, [workingAudio]);
 
+  /** "Ya terminé de hablar": closes the visitor's turn without waiting for silence. */
+  const endTurn = useCallback(() => {
+    const { phase, conversation } = latest.current;
+    if (phase === 'conversation' && conversation === 'listening') widget.current?.endTurn?.();
+  }, []);
+
   // The visitor said goodbye: once Able finished answering it, end like the "Terminar" button.
   const saidGoodbye = snapshot.phase === 'conversation' && snapshot.goodbye === 'replied' && snapshot.conversation === 'listening';
   useEffect(() => {
@@ -203,7 +212,7 @@ export function useKiosk({ simulate }: { simulate: boolean }) {
   }, [saidGoodbye, end]);
 
   return {
-    snapshot, speech, mode, simulator, start, end, retry: () => window.location.reload(),
+    snapshot, speech, mode, simulator, start, end, endTurn, canEndTurn, retry: () => window.location.reload(),
     // Gated on the snapshot so a cut never leaves the old phrase or animation on screen for a render.
     workingBeat: snapshot.working ? workingBeat : null,
     workingPhrase: snapshot.working ? workingBeat?.text ?? null : null,

@@ -7,20 +7,11 @@
 .sim-tools{position:absolute;top:48px;left:16px;display:flex;flex-wrap:wrap;gap:6px;z-index:3}.sim-tools button{padding:6px 10px;border:1px solid #e4c66e;border-radius:6px;background:#fff8e3;color:#5b4210;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
 /* Hidden staff entry: an invisible corner target, still reachable by keyboard. */
 .staff-corner{position:absolute;top:0;right:0;width:72px;height:72px;border:0;background:transparent;opacity:0}.staff-corner:focus-visible{opacity:1;background:#ffffffaa;border-radius:0 0 0 16px}
-.talk{position:absolute;left:50%;bottom:clamp(16px,4vh,40px);transform:translateX(-50%);width:min(760px,calc(100% - 32px));padding:clamp(14px,2.4vh,22px) clamp(16px,3vw,26px);border:1px solid #ffffffcc;border-radius:22px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014;backdrop-filter:blur(14px)}
-.talk-status{display:flex;align-items:center;gap:10px;margin:0;font-size:clamp(16px,2.2vw,22px);font-weight:600;color:#197fa5}.talk-status[data-state=thinking],.talk-status[data-state=working]{color:#6b5fa8}.talk-status[data-state=error]{color:#a4432a}
-/* Working mode: a speech bubble above the card, pointing up at Able (workingMode.ts). */
-.working-region{position:absolute;left:0;right:0;bottom:calc(100% + 16px);display:flex;justify-content:center;pointer-events:none}
-.working-bubble{position:relative;max-width:min(520px,100%);margin:0;padding:12px 20px;border-radius:18px;background:#fff;box-shadow:0 10px 30px #2a4d7022;font-size:clamp(16px,2.1vw,21px);font-weight:600;color:#3d3a6b;text-align:center;animation:bubble-in .3s ease-out}
-.working-bubble::before{content:"";position:absolute;left:50%;top:-8px;width:16px;height:16px;background:#fff;transform:translateX(-50%) rotate(45deg)}
-@keyframes bubble-in{from{opacity:0;transform:translateY(6px)}}@media(prefers-reduced-motion:reduce){.working-bubble{animation:none}}
+.talk-status{display:flex;align-items:center;gap:12px;margin:0;font-size:clamp(16px,2.6vmin,30px);font-weight:600;color:#197fa5}.talk-status[data-state=thinking],.talk-status[data-state=working]{color:#6b5fa8}.talk-status[data-state=error]{color:#a4432a}
 .talk-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e3f2f8;font-size:18px;flex-shrink:0}.talk-status[data-state=listening] .talk-icon{animation:talk-pulse 1.6s ease-in-out infinite}
 @keyframes talk-pulse{50%{box-shadow:0 0 0 8px #1885ab22}}@media(prefers-reduced-motion:reduce){.talk-status .talk-icon{animation:none}}
-.subtitles{margin:12px 0;max-height:7.5em;overflow:hidden;display:flex;flex-direction:column;gap:6px}.line{margin:0;font-size:clamp(15px,2vw,20px);line-height:1.4;color:#33474c}.line>span{display:inline-block;min-width:48px;margin-right:8px;font-size:.66em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a978b}.line.bot>span{color:#188db9}.line.hint{color:#7f8c80;font-style:italic}
-.talk-footer{display:flex;align-items:center;justify-content:space-between;gap:16px}.talk-footer .ai-note{margin:0}
-.end-button{flex-shrink:0;min-height:48px;padding:0 26px;border:1px solid #c98e7d;border-radius:12px;background:#fff7f3;color:#8d3d26;font-size:clamp(14px,1.8vw,17px);font-weight:600}.end-button:hover{background:#fbe9e1}
-.ai-note{font-size:clamp(11px,1.3vw,13px);color:#7f8c80;margin:10px 0 0}
-.farewell{position:absolute;left:50%;bottom:clamp(16px,6vh,60px);transform:translateX(-50%);width:min(620px,calc(100% - 32px));display:flex;flex-direction:column;gap:6px;text-align:center;padding:18px 24px;border-radius:20px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014}.farewell strong{font-size:clamp(20px,3vw,30px);font-weight:600;color:#188db9}.farewell span{font-size:clamp(13px,1.7vw,16px);color:#5f7270}
+.end-button{flex-shrink:0;min-height:clamp(48px,5vmin,64px);padding:0 clamp(22px,3vmin,34px);border:1px solid #c98e7d;border-radius:12px;background:#fff7f3;color:#8d3d26;font-size:clamp(15px,2.2vmin,24px);font-weight:600}.end-button:hover{background:#fbe9e1}
+.farewell{position:absolute;left:50%;bottom:clamp(16px,6vh,60px);transform:translateX(-50%);width:min(860px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;text-align:center;padding:clamp(18px,3vmin,32px) clamp(24px,4vmin,40px);border-radius:20px;background:#ffffffe6;box-shadow:0 16px 50px #2a4d7014}.farewell strong{font-size:clamp(20px,4vmin,44px);font-weight:600;color:#188db9}.farewell span{font-size:clamp(14px,2.4vmin,26px);color:#5f7270}
 .notices{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 32px));text-align:center;pointer-events:none}
 .kiosk-notice{margin:0;font-size:clamp(13px,1.6vw,16px);color:#8a5a1c}.kiosk-notice:not(:empty){margin-top:8px;padding:10px 16px;border-radius:12px;background:#fff8ecf0;box-shadow:0 6px 24px #4e4d3e14}.kiosk-notice.alert{color:#a4432a;font-weight:600}.kiosk-notice.alert:not(:empty){background:#fff1edf2}
 .staff-panel{position:absolute;top:16px;right:16px;width:min(380px,calc(100% - 32px));padding:20px;border:1px solid #dbe5ef;border-radius:18px;background:#fffffff7;box-shadow:0 20px 60px #1f3b5a26}
@@ -30,9 +21,6 @@
 .start-button{width:100%;margin-top:10px;min-height:48px;border:1px solid #167fac;border-radius:12px;background:#197fa5;color:#fff;font-size:17px}.start-button:hover{background:#126e93}.start-button:disabled{background:#9db7c1;border-color:#9db7c1;cursor:default}
 .staff-tools{display:flex;gap:8px;margin-top:14px}.staff-tools button{flex:1;min-height:40px;border:1px solid #d1d8cc;border-radius:10px;background:#fff;color:#4f6470;font-size:13px}
 .staff-hint{margin:12px 0 0;font-size:11px;color:#8b978b}
-@media(max-width:480px){.talk-footer{flex-direction:column;align-items:stretch}.end-button{width:100%}}
-/* While talking, the scene shrinks above the subtitles so Able's face is never covered. */
-.totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{bottom:min(36vh,250px)}
 
 /* Office canvas fills the kiosk independently of its interaction overlays. */
 .avatar-view>div{width:100%;height:100%}
@@ -58,8 +46,6 @@
 @keyframes office-document-look{0%,44%,100%{transform:translate(-3px,3px)}52%,68%{transform:translate(-1px,0)}76%,90%{transform:translate(1px,-2px)}}
 @keyframes office-smile{0%,55%,100%{transform:scaleY(.65)}68%,85%{transform:scaleY(1)}}
 @media(prefers-reduced-motion:reduce){.office-face .face-eyes,.office-face .face-gaze,.office-face .face-smile{animation:none}}
-.totem .avatar-view{left:50%;right:auto;top:40%;bottom:8%;width:min(44vh,70vw);transform:translateX(-50%)}
-.totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{top:38%;bottom:min(32vh,250px)}
 
 .team-fourth .face-eyes{animation-duration:6.3s;animation-delay:-3.6s}
 .team-fourth .face-gaze{animation-duration:15s;animation-delay:-7s}
@@ -67,3 +53,56 @@
 /* Smaller gaze travel keeps the team faces centered inside their angled screens. */
 .team-composite .face-gaze{animation-name:team-face-look}
 @keyframes team-face-look{0%,22%,100%{transform:translate(0,0)}35%,58%{transform:translate(-1px,1px)}72%,86%{transform:translate(1px,-.5px)}}
+
+/*
+ * Vertical TV layout. Everything lives on a 9:16 stage the size of the office plate (--stage-w):
+ * on the vertical TV it is the whole screen; in a landscape window it is the centered strip, and
+ * the sides show the same office blurred instead of flat blue. Sizes inside the talk overlay use
+ * container units (cqw) of that stage, so they scale with it, not with the window.
+ *
+ * Able stands on the foreground floor (feet near 83% of the height, in front of the desks) with a
+ * soft contact shadow. Its bubble sits between the logo and its head; the visitor's bubble and the
+ * status bar go at the bottom. The avatar keeps the same frame in every phase.
+ */
+.totem{--stage-w:min(100vw,calc(100svh * 9 / 16))}
+.totem::before{content:"";position:absolute;inset:-40px;z-index:-3;background:url(/backgrounds/office-faces-ready-v3.png) center/cover;filter:blur(32px) brightness(.45) saturate(1.1);pointer-events:none}
+.totem[data-office=team]::before{background-image:url(/backgrounds/office-team-no-back-v2.png)}
+.totem .avatar-view,.totem[data-phase] .avatar-view{left:50%;right:auto;top:46%;bottom:11%;width:min(36.5svh,calc(var(--stage-w) * .66));transform:translateX(-50%)}
+.totem .avatar-view::before{content:"";position:absolute;left:50%;top:82%;width:72%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,#030a16b3,#030a1655 55%,transparent);z-index:-1;pointer-events:none}
+.talk{position:absolute;top:0;bottom:0;left:50%;width:var(--stage-w);transform:translateX(-50%);container-type:inline-size;display:grid;grid-template-rows:54% 46%;pointer-events:none}
+.bubble-row{display:flex;padding:0 4.5cqw}
+.able-row{grid-row:1;align-items:flex-end;justify-content:center;padding-top:26svh;padding-bottom:1.8svh}
+.talk-bottom{grid-row:2;align-self:end;display:flex;flex-direction:column;gap:1.6svh;margin-bottom:3svh}
+.visitor-row{justify-content:flex-end}
+.bubble{position:relative;margin:0;border-radius:clamp(16px,2.6cqw,28px);background:#fffffff2;box-shadow:0 14px 40px #030a1655;color:#253a3c;line-height:1.35;animation:bubble-in .3s ease-out}
+.bubble::after{content:"";position:absolute;width:clamp(14px,2.4cqw,26px);height:clamp(14px,2.4cqw,26px);background:inherit;transform:rotate(45deg)}
+.bubble-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;line-clamp:5;overflow:hidden}.visitor-bubble .bubble-text{-webkit-line-clamp:3;line-clamp:3}
+.bubble-who{display:block;margin-bottom:.3em;font-size:.55em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#188db9}
+.able-bubble{max-width:100%;padding:2.2cqw 3.4cqw;font-size:clamp(14px,2.9cqw,34px);font-weight:500}
+.able-bubble::after{left:50%;bottom:calc(clamp(14px,2.4cqw,26px) / -2);translate:-50% 0}
+.able-bubble[data-kind=working]{font-weight:600;color:#3d3a6b;text-align:center}
+.able-bubble[data-kind=hint]{color:#5f7270}
+.visitor-bubble{max-width:62%;padding:1.6cqw 2.6cqw;background:#e3f2f8f2;font-size:clamp(13px,2.4cqw,26px)}
+.visitor-bubble::after{right:12%;bottom:calc(clamp(14px,2.4cqw,26px) / -2)}
+.visitor-bubble .bubble-who{color:#647468}
+@keyframes bubble-in{from{opacity:0;transform:translateY(8px) scale(.97)}}
+@media(prefers-reduced-motion:reduce){.bubble{animation:none}}
+.talk-bar{align-self:center;width:calc(100% - 9cqw);display:grid;grid-template-columns:1fr auto;align-items:center;gap:.8cqw 1.6cqw;padding:1.8cqw 2.8cqw;border:1px solid #72eaff40;border-radius:clamp(14px,2cqw,22px);background:#0b1c36cc;box-shadow:0 16px 50px #030a1666,inset 0 0 24px #72eaff14;backdrop-filter:blur(14px);pointer-events:auto}
+/* Dark glass bar: light text tuned for the office blues. */
+.talk-bar .talk-status{gap:1.2cqw;font-size:clamp(14px,2.8cqw,30px);color:#8fe3ff}.talk-bar .talk-status[data-state=thinking],.talk-bar .talk-status[data-state=working]{color:#c9bfff}.talk-bar .talk-status[data-state=error]{color:#ffb7a3}
+.talk-bar .talk-icon{width:1.7em;height:1.7em;font-size:.8em;background:#72eaff22}
+.talk-actions{display:flex;gap:1.2cqw;align-items:center}
+/* "Ya terminé de hablar" (PRD 038): primary while listening; it pulses once Able reports long_turn. */
+.done-button{min-height:clamp(40px,5.6cqw,64px);padding:0 3cqw;border:1px solid #72eaff;border-radius:12px;background:#1d9fcf;color:#fff;font-family:inherit;font-size:clamp(13px,2.2cqw,24px);font-weight:600;cursor:pointer}
+.done-button:hover{background:#178bb6}
+.done-button[data-urgent=true]{animation:done-pulse 1.4s ease-in-out infinite}
+@keyframes done-pulse{50%{box-shadow:0 0 0 .6em #72eaff44}}
+@media(prefers-reduced-motion:reduce){.done-button[data-urgent=true]{animation:none;outline:3px solid #72eaff}}
+.talk-bar .end-button{min-height:clamp(40px,5.6cqw,64px);padding:0 3cqw;font-size:clamp(13px,2.2cqw,24px)}
+.talk-bar .ai-note{grid-column:1/-1;margin:0;font-size:clamp(11px,1.75cqw,19px);color:#a9bfd6}
+.ai-note{font-size:clamp(12px,1.7vmin,19px);color:#7f8c80;margin:10px 0 0}
+/* Farewell and notices stay inside the stage too. */
+.farewell{width:calc(var(--stage-w) - 9vmin);max-width:860px;background:#0b1c36d9;border:1px solid #72eaff40;box-shadow:0 16px 50px #030a1666;backdrop-filter:blur(14px)}
+.farewell strong{font-size:clamp(18px,calc(var(--stage-w) * .042),44px);color:#8fe3ff}.farewell span{font-size:clamp(13px,calc(var(--stage-w) * .024),26px);color:#d5e4f2}
+.notices{width:min(620px,calc(var(--stage-w) - 32px))}
+@media(max-width:480px){.talk-bar{grid-template-columns:1fr}.talk-actions{flex-direction:column;align-items:stretch}.end-button,.done-button{width:100%}}

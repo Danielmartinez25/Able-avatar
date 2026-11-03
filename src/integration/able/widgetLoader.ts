@@ -9,6 +9,8 @@ declare global {
       // Kiosk mode (WIDGET_KIOSK_CONTRACT v1); absent from scripts older than agenthreex !622.
       startSession?(token:string):boolean;
       endSession?():void;
+      // Manual end of the visitor turn (PRD 038); absent from older kiosk scripts.
+      endTurn?():void;
     };
   }
 }

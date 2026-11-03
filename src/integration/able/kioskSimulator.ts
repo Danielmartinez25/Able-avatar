@@ -20,6 +20,7 @@ export interface SimulatedKioskWidget extends KioskWidget {
   think(ms: number, outcome: 'reply' | 'timeout' | 'noise'): void;
   /** The visitor says `text`; Able thinks briefly and answers `reply`. */
   say(text: string, reply: string): void;
+  endTurn(): void;
   finish(reason: EndReason): void;
   /** Simulates an iframe reload: `ready` arrives while a session is running. */
   reload(): void;
@@ -43,6 +44,7 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
   let speaking: ReturnType<typeof setInterval> | undefined;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let session = 0, active = false, ready = false, queued = false, thinkToken = 0;
+  let current: ConversationState = 'idle';
 
   const send = (event: KioskEvent) => {
     const parsed = parseKioskEvent(toKioskMessage(event));
@@ -68,8 +70,10 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => api.finish('idle'), idleSeconds * 1000);
   };
-  const state = (value: ConversationState, code?: string, worked?: boolean) =>
+  const state = (value: ConversationState, code?: string, worked?: boolean) => {
+    current = value;
     send({ event: 'state', state: value, session, ...(code ? { code } : {}), ...(worked ? { worked } : {}) });
+  };
   /** Activities as Able sends them while building an agent: search, then thinking/working flipping fast, then finishing. */
   const activities = (ms: number, token: number) => {
     const activity = (value: KioskActivity) => () => { if (token === thinkToken) send({ event: 'activity', activity: value, session }); };
@@ -79,13 +83,19 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
     later(Math.max(500, ms - 2500), activity('finishing'));
   };
 
+  /** Spoken greeting configured in the agent (PRD 039): a normal reply right after startSession. */
+  const greetAt = 700, greetMs = 3600;
+  const greet = () => {
+    const token = thinkToken;
+    // Anything injected before it (tests, lab buttons) wins over the greeting, as endSession does.
+    later(greetAt, () => { if (token === thinkToken) api.speak('¡Hola! Soy Able. Contame qué agente te gustaría tener.', greetMs); });
+  };
   const script = () => {
     const turns = [
       { user: 'Creame un agente que responda las preguntas frecuentes de mi tienda.', bot: '¡Dale! Estoy armando tu agente de preguntas frecuentes. ¿Qué tono preferís que use?', think: 1500, talk: 4600 },
       { user: 'Que sea amable y breve.', bot: 'Listo, ya está en tu cuenta de Able. Te llega un mail para entrar y probarlo.', think: 1200, talk: 3800 },
     ];
-    let at = 900;
-    later(at, () => { state('listening'); armIdle(); });
+    let at = greetAt + greetMs + 200;
     for (const turn of turns) {
       at += 1800;
       later(at, () => { clearTimeout(idleTimer); send({ event: 'transcript', role: 'user', text: turn.user, session }); state('thinking'); });
@@ -105,7 +115,8 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
       session++;
       active = true;
       state('idle');
-      if (api.autoScript) script(); else armIdle();
+      greet();
+      if (api.autoScript) script();
       return true;
     },
     endSession() { api.finish('ended'); },
@@ -142,6 +153,11 @@ export function createSimulatedKioskWidget({ idleSeconds = 60, readyDelayMs = 50
         else if (outcome === 'noise') api.setState('listening');
         else api.speak('¡Listo, te armé tu agente de comidas, que te da recetas con lo que tenés en la heladera! Cuando terminemos te llega un mail con el link.', 6500, true);
       });
+    },
+    endTurn() {
+      // Real widget: closes the turn with what the visitor said. Here a sample request stands in.
+      if (!active || current !== 'listening') return;
+      api.say('Quiero un agente que me ayude con recetas de cocina.', '¡Buenísimo! ¿Para cuántas personas cocinás normalmente?');
     },
     say(text, reply) {
       if (!active) return;

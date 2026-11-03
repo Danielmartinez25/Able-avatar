@@ -118,6 +118,13 @@ test('simulator emits contract events and ends in the guaranteed order', () => {
     events.length = 0;
     sim.startSession('simulated');
     assert.equal(sim.session, 2);
+    // PRD 039: the greeting (700 ms + 3.6 s) comes first; the inactivity timer starts in the listening after it.
+    mock.timers.tick(700);
+    mock.timers.tick(3600);
+    const greeting = events.find(event => event.event === 'transcript');
+    assert.equal(greeting.role, 'bot');
+    assert.equal(events.at(-1).state, 'listening');
+    assert.ok(!events.some(event => event.event === 'session_ended'));
     mock.timers.tick(20000);
     assert.deepEqual(events.slice(-2).map(event => event.event), ['session_ended', 'state']);
     assert.equal(events.at(-2).reason, 'idle');

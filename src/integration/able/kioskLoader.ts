@@ -58,6 +58,8 @@ export function ensureKioskWidget(config: KioskConfig): Promise<KioskWidget> {
       resolve({
         startSession: token => able.startSession!(token),
         endSession: () => able.endSession!(),
+        // Only exposed when this widget script has it (PRD 038).
+        ...(typeof able.endTurn === 'function' ? { endTurn: () => able.endTurn!() } : {}),
         onEvent: listener => {
           listeners.add(listener);
           return () => { listeners.delete(listener); };

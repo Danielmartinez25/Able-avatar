@@ -1,7 +1,7 @@
 import type { SpeechLevel } from '../../experience/speechLevel.ts';
 import type { VisualState } from '../../experience/visualState.ts';
 import type { EndReason, KioskActivity, KioskEvent } from './kioskContract.ts';
-import { genericTerminalMessage, recoverableCodes, terminalCodes } from './kioskContract.ts';
+import { genericTerminalMessage, longTurnCode, recoverableCodes, terminalCodes } from './kioskContract.ts';
 import { isGoodbye } from '../../experience/goodbye.ts';
 
 export type KioskPhase = 'loading' | 'unavailable' | 'operator' | 'creating' | 'conversation' | 'error' | 'farewell';
@@ -29,6 +29,8 @@ export interface KioskSnapshot {
   madeAgent: boolean;
   /** The visitor said goodbye (`heard`) and Able already started its answer (`replied`). */
   goodbye: 'heard' | 'replied' | null;
+  /** Able reported `long_turn`: the visitor talks with no pause, so "Ya terminé de hablar" is highlighted. */
+  longTurn: boolean;
   /** A `thinking` is waiting for the visitor's `transcript`; without one Able discarded the turn as noise. */
   awaitingTranscript: boolean;
   /** Noise turns in a row since the last visitor `transcript`; two of them show `micHint`. */
@@ -65,6 +67,7 @@ export const initialKioskSnapshot: KioskSnapshot = {
   worked: false,
   madeAgent: false,
   goodbye: null,
+  longTurn: false,
   awaitingTranscript: false,
   discards: 0,
   visual: 'idle',
@@ -107,6 +110,7 @@ function backToOperator(s: KioskSnapshot, notice: Notice): KioskSnapshot {
     worked: false,
     madeAgent: false,
     goodbye: null,
+    longTurn: false,
     awaitingTranscript: false,
     discards: 0,
     expression: 'auto',
@@ -212,6 +216,7 @@ function onEvent(s: KioskSnapshot, e: KioskEvent): KioskSnapshot {
     conversation: e.state, notice, discards, awaitingTranscript: e.state === 'thinking',
     activity: stillThinking ? current.activity : null, worked, madeAgent: current.madeAgent || worked,
     goodbye: current.goodbye === 'heard' && e.state === 'speaking' ? 'replied' : current.goodbye,
+    longTurn: e.state === 'listening' && e.code === longTurnCode,
   });
 }
 
@@ -226,7 +231,7 @@ export function kioskReducer(s: KioskSnapshot, input: KioskInput): KioskSnapshot
     case 'started':
       return show({ ...s, visual: 'idle' }, 'greeting', {
         phase: 'conversation', session: null, awaitingSession: true, conversation: 'preparing', working: false, activity: null, worked: false,
-        madeAgent: false, goodbye: null,
+        madeAgent: false, goodbye: null, longTurn: false,
         awaitingTranscript: false, discards: 0, expression: 'auto', notice: null, transcript: emptyTranscript, endReason: null,
       });
     case 'unavailable':

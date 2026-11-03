@@ -2,7 +2,9 @@
  * Able widget kiosk-mode contract, version 1.
  * Source of truth: agenthreex docs/prds/036-kiosco-avatar/WIDGET_KIOSK_CONTRACT.md
  * (copied in docs/24-widget-kiosk-contract.md). Only fields listed there are read.
- * PRD 037 (2026-11-02) added `activity`, `worked` and two terminal codes, still as version 1.
+ * PRD 037 (2026-11-02) added `activity`, `worked` and two terminal codes; PRD 038 (2026-11-03)
+ * added `endTurn()` and the `long_turn` notice; PRD 039 a spoken greeting that arrives as a normal
+ * reply. All still version 1.
  */
 export const conversationStates = ['idle', 'listening', 'thinking', 'speaking', 'error'] as const;
 export type ConversationState = (typeof conversationStates)[number];
@@ -24,6 +26,11 @@ export interface KioskWidget {
   /** Must run inside the staff click: it unlocks audio and microphone. */
   startSession(token: string): boolean;
   endSession(): void;
+  /**
+   * Closes the visitor's turn now, as if the pause was detected (PRD 038). Only in `listening`;
+   * under 400 ms of voice the turn is dropped silently. Missing in older widget scripts.
+   */
+  endTurn?(): void;
   onEvent(listener: (event: KioskEvent) => void): () => void;
 }
 
@@ -81,6 +88,8 @@ export const recoverableCodes: Record<string, string> = {
   reply_timeout: 'Tardé demasiado, ¿me repetís?',
   turn_failed: 'No te entendí, ¿me repetís?',
 };
+/** Informative, once per turn: the visitor has been talking 20 s without a pause (PRD 038). */
+export const longTurnCode = 'long_turn';
 export const terminalCodes: Record<string, string> = {
   mic_denied: 'Necesito permiso para el micrófono. Llamá al staff.',
   mic_not_found: 'No encuentro el micrófono. Llamá al staff.',

@@ -289,3 +289,34 @@ En el tótem:
     mail". Esto cubre un widget sin PRD 037.
 - La nota del staff menciona los dos mails.
 - Simulador: botón "Decir chau".
+
+## Viñetas y avatar centrado para la tele vertical (2026-11-03)
+
+- **Avatar:** queda centrado en la franja media de la pantalla (24 %–76 % de la altura) en todas las
+  fases. Ya no se achica ni se mueve durante la charla.
+- **Viñetas en lugar del cuadro de subtítulos:**
+  - **Able:** globo arriba de la cabeza, con la colita hacia abajo. Muestra su respuesta, la frase
+    del modo trabajando o, al empezar, la invitación a pedir un agente.
+  - **Visitante:** globo más chico abajo a la derecha.
+  - **Barra de abajo:** estado, "Terminar" y la nota de IA.
+- **Textos:** tamaños en `vmin`, más grandes en la tele (unos 28–34 px en 1080×1920).
+- **Fin de turno:** el botón para cortar la voz con ruido depende de Able (pedido en docs/28).
+
+## Fin de turno, saludo y mail único (PRD 038 y 039, 2026-11-03)
+
+- **"Ya terminé de hablar":**
+  - Se muestra en `listening` solo si el widget cargado tiene `endTurn()` (`canEndTurn`); con un
+    script viejo no aparece. Llama `AbleWidget.endTurn()` a través de `useKiosk.endTurn`.
+  - Con `long_turn` el botón late y el estado dice "Si ya terminaste, tocá «Ya terminé de hablar»".
+    `longTurn` se limpia con el siguiente estado.
+  - `long_turn` no cuenta como descarte de ruido ni muestra aviso.
+- **Saludo:** no hay cambios en el adaptador; entra como una respuesta. El simulador ahora saluda al
+  iniciar (a los 700 ms, durante 3,6 s), y su timer de inactividad arranca después del saludo.
+  - **Pendiente en Able:** cargar el texto en el agente (Voz → "Saludo al iniciar (kiosco)").
+    Propuesta: "¡Hola! Soy Able. Contame qué agente te gustaría tener."
+- **Mail único:**
+  - nota del staff: "te llega un mail con tus agentes y el acceso a tu cuenta";
+  - despedida con agente: "Te mandamos un mail con tus agentes y el acceso a tu cuenta";
+  - despedida sin agente: "Te mandamos un mail con el acceso a tu cuenta de Able".
+- **Simulador:** botones "Turno largo · 20 s"; "Ya terminé de hablar" responde con un pedido de
+  ejemplo.

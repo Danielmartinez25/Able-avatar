@@ -221,3 +221,37 @@ El widget no tiene UI; la experiencia accesible la arma able-avatar con este con
 - Un `synthesize` 403 (el dueño del agente se quedó sin saldo de voz) llega como `turn_failed`; el
   texto ya salió como `transcript`. Los 403 de permisos en las tools no tienen código: los dice el
   agente.
+
+## Anexo 2026-11-03: fin de turno manual (PRD 038), saludo (PRD 039) y mail único
+
+Transcripción de la respuesta de agenthreex. El contrato sigue en v1 y todo es aditivo. Fuente:
+WIDGET_KIOSK_CONTRACT.md, secciones "Fin de turno manual (PRD 038)" y "Saludo al iniciar (PRD 039)".
+
+**`AbleWidget.endTurn()`.** El script viejo no lo tiene: comprobar con `typeof AbleWidget.endTurn === "function"`.
+
+- Con voz del visitante cierra el turno en el momento, como si se hubiera detectado la pausa. Sigue
+  igual que siempre: `thinking` → `transcript user` → `speaking`.
+- Con menos de 400 ms de voz, el turno se descarta sin transcribir: sigue en `listening`, sin
+  `transcript` ni error.
+- No hace nada en `thinking`, `speaking`, `idle` o `error`, sin sesión o con el micrófono
+  silenciado. Antes de `ready` no se encola. No recibe argumentos.
+- **`long_turn`:** 20 s después de la primera voz del visitante sin que el turno se cierre, llega una
+  vez por turno `{ event: "state", state: "listening", code: "long_turn" }`, sin error. Es
+  informativo.
+- Mismo STT que hoy. El turno se cobra igual que uno cerrado por pausa.
+
+**Saludo al iniciar.**
+
+- El texto se carga en Able, en el agente: Voz → "Saludo al iniciar (kiosco)", hasta 200
+  caracteres. No hay opciones nuevas en `init` ni en `startSession`.
+- Después de `startSession` llega `state: speaking` + `transcript bot` + `audio_level`, y al
+  terminar `state: listening`.
+- El micrófono no graba hasta que termina el saludo. El timer de inactividad arranca en el
+  `listening` siguiente.
+- El audio se genera una vez por carga de la página. Las sesiones siguientes no consumen voz.
+- Fallas: `playback_blocked` (`listening`), `voice_unavailable` (`error`); cualquier otra, `listening`
+  sin error.
+- Durante el saludo, `endSession()` lo corta y `endTurn()` no hace nada.
+
+**Mails.** Ahora es uno solo: un link "Chatear" por agente y "Elegí tu contraseña" (vale una vez,
+vence en 24 h). Sin agentes llega "Tu acceso a Able", solo con ese link.
