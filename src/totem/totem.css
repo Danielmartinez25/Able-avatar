@@ -33,3 +33,30 @@
 @media(max-width:480px){.talk-footer{flex-direction:column;align-items:stretch}.end-button{width:100%}}
 /* While talking, the scene shrinks above the subtitles so Able's face is never covered. */
 .totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{bottom:min(36vh,250px)}
+
+/* Office canvas fills the kiosk independently of its interaction overlays. */
+.avatar-view>div{width:100%;height:100%}
+.office-fallback{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:#20395f;color:#fff}
+.office-fallback button{padding:12px 18px;border:1px solid #7dcdf4;border-radius:10px;background:#fff;color:#20395f}
+
+/* Image and faces share one SVG coordinate system at every viewport size. */
+.totem{background:#10233f}
+.layered-office{position:absolute;inset:0;z-index:-2;pointer-events:none}
+.office-composite{display:block;width:100%;height:100%}
+.office-face{fill:none;stroke:#72eaff;stroke-width:3.2;stroke-linecap:round;filter:url(#office-face-glow)}
+.face-eyes{transform-box:fill-box;transform-origin:center;animation:office-blink 5.7s linear infinite}
+.face-gaze{animation:office-monitor-look 13s ease-in-out infinite}
+.face-smile{transform-box:fill-box;transform-origin:center;animation:office-smile 13s ease-in-out infinite}
+.face-documents .face-eyes{animation-duration:6.9s;animation-delay:-2.3s}
+.face-documents .face-gaze{animation:office-document-look 17s ease-in-out -5s infinite}
+.face-documents .face-smile{animation-duration:17s;animation-delay:-5s}
+.face-validation .face-eyes{animation-duration:7.8s;animation-delay:-4.1s}
+.face-validation .face-gaze{animation-duration:19s;animation-delay:-9s}
+.face-validation .face-smile{animation-duration:19s;animation-delay:-9s}
+@keyframes office-blink{0%,39%,43%,88%,92%,100%{transform:scaleY(1)}41%,90%{transform:scaleY(.08)}}
+@keyframes office-monitor-look{0%,20%,85%,100%{transform:translate(-2px,-1px)}30%,58%{transform:translate(1px,3px)}68%,77%{transform:translate(0,-2px)}}
+@keyframes office-document-look{0%,44%,100%{transform:translate(-3px,3px)}52%,68%{transform:translate(-1px,0)}76%,90%{transform:translate(1px,-2px)}}
+@keyframes office-smile{0%,55%,100%{transform:scaleY(.65)}68%,85%{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.office-face .face-eyes,.office-face .face-gaze,.office-face .face-smile{animation:none}}
+.totem .avatar-view{left:50%;right:auto;top:40%;bottom:8%;width:min(44vh,70vw);transform:translateX(-50%)}
+.totem[data-phase=conversation] .avatar-view,.totem[data-phase=error] .avatar-view,.totem[data-phase=farewell] .avatar-view{top:38%;bottom:min(32vh,250px)}

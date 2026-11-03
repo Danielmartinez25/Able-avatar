@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AvatarScene } from '../avatar/AvatarScene';
+import { LayeredOffice } from './LayeredOffice';
 import { SpeechLevelContext } from '../avatar/speechContext';
 import { actionDetails, attentionActions } from '../experience/performance';
 import type { ActionName, ActionPlayback } from '../experience/performance';
@@ -116,6 +117,7 @@ export function TotemApp(){
   const sceneState=activity==='working' ? 'working' : snapshot.visual;
   const status=activity ? {icon:'⚙',text:activityMotion[activity].text} : snapshot.working ? workingStatus : snapshot.conversation ? talkStatus[snapshot.conversation] : null;
   return <main className="totem" data-phase={snapshot.phase}>
+    <LayeredOffice/>
     <div className="avatar-view">
       <SpeechLevelContext value={kiosk.speech}>
         <AvatarScene state={sceneState} revision={snapshot.visualRevision} expression={snapshot.expression} action={sceneAction} reducedMotion={reducedMotion} onReact={greet}/>
